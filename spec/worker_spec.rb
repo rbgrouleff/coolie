@@ -1,16 +1,5 @@
 require 'tempfile'
-
-class Worker
-  attr_accessor :pid
-
-  def initialize(&block)
-    @block = block
-  end
-
-  def start!
-    self.pid = fork(&@block)
-  end
-end
+require_relative '../lib/worker'
 
 describe Worker do
   subject { Worker.new {} }
