@@ -1,37 +1,39 @@
-class Worker
-  def initialize(job)
-    @job = job
-    setup
-  end
-
-  def start
-    loop do
-      perform_job
-      break if @stopped
+module Coolie
+  class Worker
+    def initialize(job)
+      @job = job
+      setup
     end
-  end
 
-  def stop
-    @stopped = true
-  end
-
-  def perform_job
-    if child = fork
-      Process.waitpid2 child
-    else
-      self.process_name = "Child of worker #{Process.ppid}"
-      @job.perform
-      exit!
+    def start
+      loop do
+        perform_job
+        break if @stopped
+      end
     end
-  end
 
-  private
+    def stop
+      @stopped = true
+    end
 
-  def setup
-    @job.setup if @job.respond_to? :setup
-  end
+    def perform_job
+      if child = fork
+        Process.waitpid2 child
+      else
+        self.process_name = "Child of worker #{Process.ppid}"
+        @job.perform
+        exit!
+      end
+    end
 
-  def process_name=(name)
-    $PROGRAM_NAME = name
+    private
+
+    def setup
+      @job.setup if @job.respond_to? :setup
+    end
+
+    def process_name=(name)
+      $PROGRAM_NAME = name
+    end
   end
 end
