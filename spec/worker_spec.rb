@@ -1,4 +1,3 @@
-require 'tempfile'
 require_relative '../lib/worker'
 
 describe Worker do
