@@ -2,36 +2,65 @@ require 'tempfile'
 require_relative '../lib/worker'
 
 describe Worker do
-  subject { Worker.new {} }
+  let(:job) { double :job }
 
-  context 'that has not been started yet' do
-    it 'should not have a pid' do
-      subject.pid.should be_nil
-    end
-
-    it 'should have a ppid' do
-      subject.ppid.should_not be_nil
+  context 'when job does not respond to :setup' do
+    it 'does not call job.setup' do
+      job.stub(:respond_to?).with(:setup) { false }
+      job.should_not_receive :setup
+      Worker.new job
     end
   end
 
-  context 'that has been started' do
-    before { subject.start! }
+  context 'when job responds to :setup' do
+    it 'sets up the job upon initialization' do
+      job.stub(:respond_to?).with(:setup) { true }
+      job.should_receive :setup
+      Worker.new job
+    end
+  end
 
-    it 'should have a pid' do
-      subject.pid.should_not eq(subject.ppid)
+  context 'when stopped before it is started' do
+    it 'performs the job once' do
+      worker = Worker.new job
+      worker.should_receive(:perform_job).once
+      worker.stop
+      worker.start
+    end
+  end
+
+  context 'in the child process' do
+    it 'should perform the job' do
+      job.should_receive :perform
+      worker = Worker.new job
+      worker.stub(:fork) { nil }
+      worker.stub :exit!
+      worker.perform_job
     end
 
-    it 'executes the passed on block' do
-      tmpfile = Tempfile.new 'foo'
-      worker = Worker.new do
-        tmpfile.write "PPID is: #{Process.ppid}"
-      end
-      worker.start!
-      Process.wait worker.pid
-      tmpfile.rewind
-      tmpfile.read.should eq("PPID is: #{worker.ppid}")
-      tmpfile.close
-      tmpfile.unlink
+    it 'should exit after having performed the job' do
+      job.stub :perform
+      worker = Worker.new job
+      worker.stub(:fork) { nil }
+      worker.should_receive :exit!
+      worker.perform_job
     end
+
+    it 'should change process name' do
+      job.stub :perform
+      worker = Worker.new job
+      worker.stub(:fork) { nil }
+      worker.stub :exit!
+      Process.stub(:ppid) { 666 }
+      worker.should_receive(:process_name=).with "Child of worker 666"
+      worker.perform_job
+    end
+  end
+
+  it 'spawns a process and waits for it to finish' do
+    worker = Worker.new job
+    worker.should_receive(:fork) { 666 }
+    Process.should_receive(:waitpid2).with 666
+    worker.perform_job
   end
 end
