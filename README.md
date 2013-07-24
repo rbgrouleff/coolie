@@ -1,11 +1,51 @@
-# Coolie
+Coolie
+======
 
-Coolie is a really simple library for running background jobs.
+Coolie provides a really simple way of starting and stopping multiple parallel
+worker processes that are meant to run repeatedly in an efficient way.
 
 It requires no frameworks, databases or anything. It just does what you
 want it to. And the best of it all: It will never ask for a raise!
 
-## License
+How it works
+------------
+
+The Master takes a job as argument in the initializer, that responds to `setup` and `perform`.
+
+When sending the `start_worker` message to the master, it forks a child process where it hands
+the job to a new worker, which then sends the `setup` message to the job during initialization.
+The purpose of the `setup` method is to load and initialize anything necessary to perform the job.
+
+The master then starts the worker, which enters a run loop, that forks yet another child process where
+the job receives the `perform` message.
+
+Things missing
+--------------
+
+Coolie is still very much in its infancy, though the ambition isn't to build a [Resque] [resque] clone, but
+instead build as small a tool with as few features as possible.
+
+[resque]: https://github.com/resque/resque
+
+There are, however, still features that are missing:
+
+- It needs to be made into a gem
+- Daemonization of the master
+- Communication with the master through signals (something like [Unicorn] [unicorn])
+- Basic logging
+- Some sort of error handling
+- Some sort of reaping of worker processes
+- Documentation
+
+[unicorn]: http://unicorn.bogomips.org/
+
+Contributing
+------------
+
+Feel free to report issues or fork, fix and submit pull requests.
+
+License
+-------
 
 Copyright 2013 Rasmus Bang Grouleff
 
