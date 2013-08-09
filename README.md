@@ -19,6 +19,23 @@ The purpose of the `setup` method is to load and initialize anything necessary t
 The master then starts the worker, which enters a run loop, that forks yet another child process where
 the job receives the `perform` message.
 
+Getting started
+---------------
+
+1. Add `gem 'coolie'` to your Gemfile and run `bundle`
+2. Subclass `Coolie::Job` and implement the `perform` method
+3. Instantiate the `Coolie::Master`, giving it an instance of your job
+4. Send the `Coolie::Master#start_worker` as many times as the number of
+workers needed
+
+If you need to stop workers, you can do it one at the time by sending
+the `stop_worker` message to the master or stop them all by sending the
+`stop_all` message.
+
+When stopping workers, they are allowed to finish what they are doing,
+before they stop. Which means you're screwed right now, if the `perform`
+method in your job never returns.
+
 Things missing
 --------------
 
@@ -29,6 +46,7 @@ instead build as small a tool with as few features as possible.
 
 There are, however, still features that are missing:
 
+- Force killing workers
 - Daemonization of the master
 - Communication with the master through signals (something like [Unicorn] [unicorn])
 - Basic logging
