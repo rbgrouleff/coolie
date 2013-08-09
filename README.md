@@ -29,7 +29,6 @@ instead build as small a tool with as few features as possible.
 
 There are, however, still features that are missing:
 
-- It needs to be made into a gem
 - Daemonization of the master
 - Communication with the master through signals (something like [Unicorn] [unicorn])
 - Basic logging
