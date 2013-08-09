@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["rasmusbg@virtualmanager.com"]
   spec.description   = %q{A tiny library for spawning worker processes}
   spec.summary       = %q{A tiny library for spawning worker processes}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/rbgrouleff/coolie"
   spec.license       = "Apache License 2.0"
 
   spec.files         = `git ls-files`.split($/)
