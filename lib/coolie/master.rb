@@ -30,6 +30,12 @@ module Coolie
       end
     end
 
+    def stop_all
+      while child_count > 0 do
+        stop_worker
+      end
+    end
+
     def child_count
       @child_pids.length
     end

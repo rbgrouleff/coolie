@@ -28,13 +28,13 @@ module Coolie
       end
     end
 
-    describe 'when receiving the stop_worker message' do
-      describe 'and it has running workers' do
-        before :each do
-          master.stub(:fork) { 666 }
-          master.start_worker
-        end
+    describe 'when it has running workers' do
+      before :each do
+        master.stub(:fork) { 666 }
+        master.start_worker
+      end
 
+      describe 'and it receives stop_worker message' do
         it 'kills a child with the INT signal' do
           Process.should_receive(:kill).with('INT', 666)
           Process.stub(:waitpid2).with(666)
@@ -58,9 +58,27 @@ module Coolie
         end
       end
 
-      describe 'and there are no running workers' do
+      it 'stops all workers when receiving stop_all' do
+        Process.stub(:kill).with('INT', 666)
+        Process.stub(:waitpid2).with(666)
+
+        master.should_receive(:stop_worker).exactly(master.child_count).times.and_call_original
+
+        master.stop_all
+      end
+    end
+
+    describe 'when there are no running workers' do
+      describe 'and it receives stop_worker' do
         it 'raises an error' do
           expect { master.stop_worker }.to raise_error('No workers running')
+        end
+      end
+
+      describe 'and it receives stop_all' do
+        it 'does nothing' do
+          master.should_not_receive(:stop_worker)
+          master.stop_all
         end
       end
     end
