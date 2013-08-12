@@ -44,7 +44,7 @@ module Coolie
     private
 
     def process_name=(name)
-      $PROGRAM_NAME = name
+      $0 = name
     end
   end
 end
