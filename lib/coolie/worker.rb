@@ -20,7 +20,7 @@ module Coolie
       if child = fork
         Process.waitpid2 child
       else
-        self.process_name = "Child of worker #{Process.ppid}"
+        process_name = "Child of worker #{Process.ppid}"
         @job.perform
         exit!
       end

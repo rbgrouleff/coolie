@@ -12,6 +12,7 @@ module Coolie
         @child_pids << child
       else
         worker = Worker.new(@job)
+        process_name = "Worker #{Process.pid}"
         Signal.trap('INT') do
           worker.stop
         end
@@ -38,6 +39,12 @@ module Coolie
 
     def child_count
       @child_pids.length
+    end
+
+    private
+
+    def process_name=(name)
+      $PROGRAM_NAME = name
     end
   end
 end
