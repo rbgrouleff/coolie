@@ -1,7 +1,10 @@
 module Coolie
   class Worker
-    def initialize(job)
+    UNCAUGHT_ERROR = '.'
+
+    def initialize(job, output)
       @job = job
+      @output = output
       setup
     end
 
@@ -18,11 +21,16 @@ module Coolie
 
     def perform_job
       if child = fork
-        pid, status = Process.waitpid2 child
+        _, status = Process.waitpid2 child
+        @output.write UNCAUGHT_ERROR if status != 0
       else
         self.process_name = "Child of worker #{Process.ppid}"
-        @job.perform
-        exit!
+        begin
+          @job.perform
+          exit!
+        rescue Exception
+          exit! 1
+        end
       end
     end
 
