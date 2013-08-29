@@ -43,7 +43,7 @@ module Coolie
 
       it 'should exit after having performed the job' do
         job.stub :perform
-        worker.should_receive :exit!
+        worker.should_receive(:exit!).with 0
         worker.perform_job
       end
 
@@ -65,19 +65,23 @@ module Coolie
     end
 
     context 'in the worker process' do
+      let(:status) { double(:status) }
+
       before :each do
         worker.stub(:fork) { 666 }
       end
 
       it 'spawns a process and waits for it to finish' do
         worker.should_receive(:fork) { 666 }
-        Process.should_receive(:waitpid2).with(666) { [666, 0] }
+        status.stub(:success?) { true }
+        Process.should_receive(:waitpid2).with(666) { [666, status] }
         worker.perform_job
       end
 
       context 'when exit status from the child is non-zero' do
         before :each do
-          Process.stub(:waitpid2) { [666, 1] }
+          status.stub(:success?) { false }
+          Process.stub(:waitpid2) { [666, status] }
         end
 
         it 'writes an error message to the output' do
