@@ -51,21 +51,21 @@ module Coolie
       describe 'in the master process' do
         before :each do
           master.stub(:fork) { 666 }
+          IO.stub(:pipe) { pipes }
+          pipes.last.stub(:close)
         end
 
-        it 'increases child_count' do
+        it 'increases worker_count' do
           master.start_worker
-          master.child_count.should eq(1)
+          master.worker_count.should eq(1)
         end
 
         it 'should open a pipe' do
           IO.should_receive(:pipe) { pipes }
-          pipes.last.stub(:close)
           master.start_worker
         end
 
         it 'should close the writer pipe' do
-          IO.stub(:pipe) { pipes }
           pipes.last.should_receive :close
           master.start_worker
         end
@@ -98,9 +98,9 @@ module Coolie
           master.stop_worker 666
         end
 
-        it 'decreases child_count' do
+        it 'decreases worker_count' do
           master.stop_worker(666)
-          master.child_count.should eq(0)
+          master.worker_count.should eq(0)
         end
       end
 
@@ -108,7 +108,7 @@ module Coolie
         Process.stub(:kill).with('INT', 666)
         Process.stub(:waitpid2).with(666)
 
-        master.should_receive(:stop_worker).with(666).exactly(master.child_count).times.and_call_original
+        master.should_receive(:stop_worker).with(666).exactly(master.worker_count).times.and_call_original
 
         master.stop_all
       end
