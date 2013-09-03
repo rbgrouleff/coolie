@@ -2,11 +2,12 @@ require_relative '../../lib/coolie/master'
 
 module Coolie
   describe Master do
-    let(:job) { double(:job) }
     subject(:master) { Master.new job }
 
+    let(:job) { double(:job) }
+    let(:pipes) { [double(:reader_pipe), double(:writer_pipe)] }
+
     describe 'when receiving the start_worker message' do
-      let(:pipes) { [double(:reader_pipe), double(:writer_pipe)] }
 
       it 'forks' do
         master.should_receive(:fork) { 666 }
@@ -73,29 +74,31 @@ module Coolie
 
     describe 'when it has running workers' do
       before :each do
+        pipes.each { |p| p.stub :close }
+        IO.stub(:pipe) { pipes }
         master.stub(:fork) { 666 }
         master.start_worker
+        Process.stub(:kill).with('INT', 666)
+        Process.stub(:waitpid2).with(666)
       end
 
       describe 'and it receives stop_worker message' do
         it 'kills a child with the INT signal' do
           Process.should_receive(:kill).with('INT', 666)
-          Process.stub(:waitpid2).with(666)
-
           master.stop_worker(666)
         end
 
         it 'waits for the killed child to stop' do
-          Process.stub(:kill).with('INT', 666)
           Process.should_receive(:waitpid2).with(666)
-
           master.stop_worker(666)
         end
 
-        it 'decreases child_count' do
-          Process.stub(:kill).with('INT', 666)
-          Process.stub(:waitpid2).with(666)
+        it 'closes the reader pipe associated with the worker' do
+          pipes.first.should_receive :close
+          master.stop_worker 666
+        end
 
+        it 'decreases child_count' do
           master.stop_worker(666)
           master.child_count.should eq(0)
         end

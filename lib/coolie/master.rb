@@ -4,7 +4,7 @@ module Coolie
   class Master
     def initialize(job, options = {})
       @number_of_workers = options.fetch :workers, 0
-      @child_pids = []
+      @workers = []
       @job = job
     end
 
@@ -22,7 +22,7 @@ module Coolie
       reader, writer = IO.pipe
       if child = fork
         writer.close
-        @child_pids << child
+        @workers << { pid: child, reader: reader }
       else
         reader.close
         worker = Worker.new(@job, writer)
@@ -36,23 +36,24 @@ module Coolie
     end
 
     def stop_worker(wpid)
-      if @child_pids.include?(wpid)
+      if worker = @workers.find { |w| w.fetch(:pid) == wpid }
+        worker.fetch(:reader).close
         Process.kill "INT", wpid
         Process.waitpid2 wpid
-        @child_pids.delete wpid
+        @workers.delete worker
       else
         raise "Unknown worker PID: #{wpid}"
       end
     end
 
     def stop_all
-      @child_pids.each do |wpid|
-        stop_worker(wpid)
+      @workers.each do |worker|
+        stop_worker worker.fetch(:pid)
       end
     end
 
     def child_count
-      @child_pids.length
+      @workers.length
     end
 
     def monitor_workers
@@ -79,6 +80,9 @@ module Coolie
         stop_worker wpid
         start_worker
       end
+    end
+
+    def worker_pid(reader)
     end
 
     def trap_signals
