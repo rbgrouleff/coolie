@@ -52,22 +52,22 @@ module Coolie
       end
     end
 
-    def child_count
+    def worker_count
       @workers.length
     end
 
     def monitor_workers
       loop do
-        if workers = crashed_workers
-          restart_workers workers
+        if worker_pids = pids_of_crashed_workers
+          restart_workers worker_pids
         end
       end
     end
 
     private
 
-    def crashed_workers
-      readers = IO.select(@workers.map { |w| w[:reader] }, nil, nil, 1)
+    def pids_of_crashed_workers
+      readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, 1)
       if readers
         readers.map { |reader| worker_pid(reader) }
       else
@@ -75,8 +75,8 @@ module Coolie
       end
     end
 
-    def restart_workers(workers)
-      workers.each do |wpid|
+    def restart_workers(worker_pids)
+      worker_pids.each do |wpid|
         stop_worker wpid
         start_worker
       end
