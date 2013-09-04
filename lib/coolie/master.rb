@@ -88,6 +88,7 @@ module Coolie
 
     def trap_signals
       Signal.trap 'INT' do
+        puts "Waiting for workers to stop"
         stop_all
         exit 0
       end
