@@ -65,7 +65,7 @@ module Coolie
     def pids_of_crashed_workers
       readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, IO_TIMEOUT)
       if readers
-        readers.map { |reader| worker_pid(reader) }
+        readers.first.map { |reader| worker_pid(reader) }
       else
         []
       end
@@ -79,7 +79,7 @@ module Coolie
     end
 
     def worker_pid(reader)
-      if worker = @workers.find { |w| w.fetch(:reader) == reader }
+      if worker = @workers.find { |w| w.fetch(:reader).fileno == reader.fileno }
         worker.fetch(:pid)
       else
         raise 'Unknown worker pipe'

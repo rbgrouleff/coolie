@@ -180,6 +180,7 @@ module Coolie
     it 'can resolve a wpid from a reader pipe' do
       IO.stub(:pipe) { pipes }
       pipes.each { |p| p.stub(:close) }
+      pipes.first.stub(:fileno) { 213 }
       master.stub(:fork) { 666 }
       master.start_worker
 
@@ -192,11 +193,14 @@ module Coolie
 
     it 'returns the pids of crashed workers' do
       readers = [double(:reader), double(:reader)]
+      readers.each_with_index do |reader, index|
+        reader.stub(:fileno) { index+1 }
+      end
       master.instance_variable_set(:@workers, [
         { pid: 666, reader: readers.first },
         { pid: 999, reader: readers.last },
       ])
-      IO.should_receive(:select).with(readers, nil, nil, Master::IO_TIMEOUT) { readers }
+      IO.should_receive(:select).with(readers, nil, nil, Master::IO_TIMEOUT) { [readers, [], []] }
       master.should_receive(:worker_pid).twice.and_call_original
       master.send(:pids_of_crashed_workers).should eq([666, 999])
     end
