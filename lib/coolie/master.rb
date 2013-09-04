@@ -2,6 +2,8 @@ require_relative './worker'
 
 module Coolie
   class Master
+    IO_TIMEOUT = 10
+
     def initialize(job, options = {})
       @number_of_workers = options.fetch :workers, 0
       @workers = []
@@ -65,7 +67,7 @@ module Coolie
     end
 
     def pids_of_crashed_workers
-      readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, 10)
+      readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, IO_TIMEOUT)
       if readers
         readers.map { |reader| worker_pid(reader) }
       else
