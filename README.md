@@ -25,8 +25,15 @@ Getting started
 1. Add `gem 'coolie'` to your Gemfile and run `bundle`
 2. Subclass `Coolie::Job` and implement the `perform` method
 3. Instantiate the `Coolie::Master`, giving it an instance of your job
-4. Send the `Coolie::Master#start_worker` as many times as the number of
-workers needed
+   and optionally an options hash with the key `:workers` specifying the
+number of workers you need
+4.
+   a. Send the `start` message to the master, if the `options` hash was
+     provided. This starts a run loop which monitors workers and
+restarts them if they encounters uncaught exceptions
+   b. Otherwise send the `start_worker` message to the master as many
+     times as the number of workers needed. This doesn't start any run
+loop, and there is no monitoring of workers.
 
 If you need to stop workers, you can do it one at the time by sending
 the `stop_worker` message to the master or stop them all by sending the
@@ -35,6 +42,10 @@ the `stop_worker` message to the master or stop them all by sending the
 When stopping workers, they are allowed to finish what they are doing,
 before they stop. Which means you're screwed right now, if the `perform`
 method in your job never returns.
+
+The master registers a signal handler when you send it the `start`
+message, which responds to `^C`. This triggers a graceful shutdown that
+stops the workers and exits the run loop.
 
 Things missing
 --------------
@@ -49,6 +60,7 @@ There are, however, still features that are missing:
 - Force killing workers
 - Daemonization of the master
 - Communication with the master through signals (something like [Unicorn] [unicorn])
+- Signals for adding and removing workers
 - Basic logging
 - Some sort of error handling
 - Some sort of reaping of worker processes
