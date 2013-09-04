@@ -26,14 +26,14 @@ Getting started
 2. Subclass `Coolie::Job` and implement the `perform` method
 3. Instantiate the `Coolie::Master`, giving it an instance of your job
    and optionally an options hash with the key `:workers` specifying the
-number of workers you need
-4.
-   a. Send the `start` message to the master, if the `options` hash was
+   number of workers you need
+4. You can start workers by doing one of the following things:
+   * Send the `start` message to the master, if the `options` hash was
      provided. This starts a run loop which monitors workers and
-restarts them if they encounters uncaught exceptions
-   b. Otherwise send the `start_worker` message to the master as many
+     restarts them if they encounters uncaught exceptions
+   * Otherwise send the `start_worker` message to the master as many
      times as the number of workers needed. This doesn't start any run
-loop, and there is no monitoring of workers.
+     loop, and there is no monitoring of workers.
 
 If you need to stop workers, you can do it one at the time by sending
 the `stop_worker` message to the master or stop them all by sending the
