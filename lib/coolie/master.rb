@@ -29,11 +29,7 @@ module Coolie
         reader.close
         worker = Worker.new(@job, writer)
         self.process_name = "Worker #{Process.pid}"
-        Signal.trap('INT') do
-          worker.stop
-        end
         worker.start
-        exit!
       end
     end
 

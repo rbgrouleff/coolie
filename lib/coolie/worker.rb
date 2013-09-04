@@ -9,15 +9,17 @@ module Coolie
     end
 
     def start
+      trap_signals
+
       loop do
-        perform_job
         break if @stopped
+        perform_job
       end
+
+      exit 0
     end
 
-    def stop
-      @stopped = true
-    end
+    private
 
     def perform_job
       if child = fork
@@ -27,14 +29,22 @@ module Coolie
         self.process_name = "Child of worker #{Process.ppid}"
         begin
           @job.perform
-          exit! 0
+          exit 0
         rescue Exception
-          exit! 1
+          exit 1
         end
       end
     end
 
-    private
+    def trap_signals
+      Signal.trap('INT') do
+        stop
+      end
+    end
+
+    def stop
+      @stopped = true
+    end
 
     def setup
       @job.setup if @job.respond_to? :setup

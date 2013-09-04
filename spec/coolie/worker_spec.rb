@@ -6,6 +6,19 @@ module Coolie
     let(:output) { double :pipe }
     let(:worker) { Worker.new job, output }
 
+    it 'traps signals when started' do
+      worker.stub :exit
+      worker.instance_variable_set(:@stopped, true)
+      worker.should_receive :trap_signals
+      worker.start
+    end
+
+    it 'exits when it has been stopped' do
+      worker.instance_variable_set(:@stopped, true)
+      worker.should_receive :exit
+      worker.start
+    end
+
     context 'when job does not respond to :setup' do
       it 'does not call job.setup' do
         job.stub(:respond_to?).with(:setup) { false }
@@ -22,14 +35,6 @@ module Coolie
       end
     end
 
-    context 'when stopped before it is started' do
-      it 'performs the job once' do
-        worker.should_receive(:perform_job).once
-        worker.stop
-        worker.start
-      end
-    end
-
     context 'in the child process' do
       before :each do
         worker.stub(:fork) { nil }
@@ -37,29 +42,29 @@ module Coolie
 
       it 'should perform the job' do
         job.should_receive :perform
-        worker.stub :exit!
-        worker.perform_job
+        worker.stub :exit
+        worker.send :perform_job
       end
 
       it 'should exit after having performed the job' do
         job.stub :perform
-        worker.should_receive(:exit!).with 0
-        worker.perform_job
+        worker.should_receive(:exit).with 0
+        worker.send :perform_job
       end
 
       it 'should change process name' do
         job.stub :perform
-        worker.stub :exit!
+        worker.stub :exit
         Process.stub(:ppid) { 666 }
         worker.should_receive(:process_name=).with "Child of worker 666"
-        worker.perform_job
+        worker.send :perform_job
       end
 
       context 'when job.perform raises an error' do
         it 'should exit with a non-zero status' do
           job.stub(:perform).and_raise Exception.new "should be rescued!"
-          worker.should_receive(:exit!).with(1)
-          worker.perform_job
+          worker.should_receive(:exit).with(1)
+          worker.send :perform_job
         end
       end
     end
@@ -75,7 +80,7 @@ module Coolie
         worker.should_receive(:fork) { 666 }
         status.stub(:success?) { true }
         Process.should_receive(:waitpid2).with(666) { [666, status] }
-        worker.perform_job
+        worker.send :perform_job
       end
 
       context 'when exit status from the child is non-zero' do
@@ -86,7 +91,7 @@ module Coolie
 
         it 'writes an error message to the output' do
           output.should_receive(:write).with Worker::UNCAUGHT_ERROR
-          worker.perform_job
+          worker.send :perform_job
         end
       end
     end
