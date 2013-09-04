@@ -20,9 +20,9 @@ module Coolie
 
     def start_worker
       reader, writer = IO.pipe
-      if child = fork
+      if wpid = fork
         writer.close
-        @workers << { pid: child, reader: reader }
+        @workers << { pid: wpid, reader: reader }
       else
         reader.close
         worker = Worker.new(@job, writer)
@@ -56,22 +56,20 @@ module Coolie
       @workers.length
     end
 
+    private
+
     def monitor_workers
       loop do
-        if worker_pids = pids_of_crashed_workers
-          restart_workers worker_pids
-        end
+        restart_workers pids_of_crashed_workers
       end
     end
 
-    private
-
     def pids_of_crashed_workers
-      readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, 1)
+      readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, 10)
       if readers
         readers.map { |reader| worker_pid(reader) }
       else
-        nil
+        []
       end
     end
 
@@ -83,6 +81,11 @@ module Coolie
     end
 
     def worker_pid(reader)
+      if worker = @workers.find { |w| w.fetch(:reader) == reader }
+        worker.fetch(:pid)
+      else
+        raise 'Unknown worker pipe'
+      end
     end
 
     def trap_signals

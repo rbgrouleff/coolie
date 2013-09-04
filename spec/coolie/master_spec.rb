@@ -8,7 +8,6 @@ module Coolie
     let(:pipes) { [double(:reader_pipe), double(:writer_pipe)] }
 
     describe 'when receiving the start_worker message' do
-
       it 'forks' do
         master.should_receive(:fork) { 666 }
         master.start_worker
@@ -170,6 +169,36 @@ module Coolie
         master.should_receive :monitor_workers
         master.start
       end
+    end
+
+    it 'stops workers and start new ones when receiving the restart_workers message' do
+      master.should_receive(:stop_worker).exactly(:twice)
+      master.should_receive(:start_worker).exactly(:twice)
+      master.send(:restart_workers, [333, 666])
+    end
+
+    it 'can resolve a wpid from a reader pipe' do
+      IO.stub(:pipe) { pipes }
+      pipes.each { |p| p.stub(:close) }
+      master.stub(:fork) { 666 }
+      master.start_worker
+
+      master.send(:worker_pid, pipes.first).should eq(666)
+    end
+
+    it 'raises if it can\'t resolve a wpid from a reader pipe' do
+      expect { master.send(:worker_pid, pipes.first) }.to raise_error("Unknown worker pipe")
+    end
+
+    it 'returns the pids of crashed workers' do
+      readers = [double(:reader), double(:reader)]
+      master.instance_variable_set(:@workers, [
+        { pid: 666, reader: readers.first },
+        { pid: 999, reader: readers.last },
+      ])
+      IO.should_receive(:select).with(readers, nil, nil, 10) { [666, 999] }
+      master.should_receive(:worker_pid).twice
+      master.send :pids_of_crashed_workers
     end
   end
 end
