@@ -35,9 +35,9 @@ module Coolie
 
     def stop_worker(wpid)
       if worker = @workers.find { |w| w.fetch(:pid) == wpid }
-        worker.fetch(:reader).close
         Process.kill "INT", wpid
         Process.waitpid2 wpid
+        worker.fetch(:reader).close
         @workers.delete worker
       else
         raise "Unknown worker PID: #{wpid}"
