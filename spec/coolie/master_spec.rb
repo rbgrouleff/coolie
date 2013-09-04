@@ -196,9 +196,9 @@ module Coolie
         { pid: 666, reader: readers.first },
         { pid: 999, reader: readers.last },
       ])
-      IO.should_receive(:select).with(readers, nil, nil, Master::IO_TIMEOUT) { [666, 999] }
-      master.should_receive(:worker_pid).twice
-      master.send :pids_of_crashed_workers
+      IO.should_receive(:select).with(readers, nil, nil, Master::IO_TIMEOUT) { readers }
+      master.should_receive(:worker_pid).twice.and_call_original
+      master.send(:pids_of_crashed_workers).should eq([666, 999])
     end
   end
 end
