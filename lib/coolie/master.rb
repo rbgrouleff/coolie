@@ -12,9 +12,11 @@ module Coolie
 
     def start
       if @number_of_workers > 0
+        puts "Coolie::Master started with PID: #{Process.pid}"
         trap_signals
         @number_of_workers.times do
           start_worker
+          sleep rand(1000).fdiv(1000)
         end
         monitor_workers
       end
