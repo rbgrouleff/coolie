@@ -93,6 +93,24 @@ module Coolie
           output.should_receive(:write).with Worker::UNCAUGHT_ERROR
           worker.send :perform_job
         end
+
+        it "doesn't write error byte to output when it has been stopped" do
+          worker.stub(:stopped?) { true }
+          output.should_not_receive :write
+          worker.send :perform_job
+        end
+      end
+
+      context 'when exit status from child is zero' do
+        before :each do
+          status.stub(:success?) { true }
+          Process.stub(:waitpid2) { [666, status] }
+        end
+
+        it "doesn't write error byte to output" do
+          output.should_not_receive :write
+          worker.send :perform_job
+        end
       end
     end
   end

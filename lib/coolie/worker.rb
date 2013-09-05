@@ -12,7 +12,7 @@ module Coolie
       trap_signals
 
       loop do
-        break if @stopped
+        break if stopped?
         perform_job
       end
 
@@ -24,7 +24,7 @@ module Coolie
     def perform_job
       if child = fork
         _, status = Process.waitpid2 child
-        @output.write UNCAUGHT_ERROR unless status.success?
+        @output.write UNCAUGHT_ERROR unless status.success? || stopped?
       else
         self.process_name = "Child of worker #{Process.ppid}"
         begin
@@ -44,6 +44,10 @@ module Coolie
 
     def stop
       @stopped = true
+    end
+
+    def stopped?
+      @stopped
     end
 
     def setup
