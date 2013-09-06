@@ -11,15 +11,13 @@ module Coolie
     end
 
     def start
-      if @number_of_workers > 0
-        puts "Coolie::Master started with PID: #{Process.pid}"
-        trap_signals
-        @number_of_workers.times do
-          start_worker
-          sleep rand(1000).fdiv(1000)
-        end
-        monitor_workers
+      trap_signals
+      @number_of_workers.times do
+        start_worker
+        sleep rand(1000).fdiv(1000)
       end
+      puts "Coolie::Master started with PID: #{Process.pid}"
+      monitor_workers
     end
 
     def start_worker
@@ -61,11 +59,12 @@ module Coolie
     def monitor_workers
       loop do
         restart_workers pids_of_crashed_workers
+        maintain_number_of_workers
       end
     end
 
     def pids_of_crashed_workers
-      readers = IO.select(@workers.map { |w| w.fetch(:reader) }, nil, nil, IO_TIMEOUT)
+      readers = IO.select(worker_pipes, nil, nil, IO_TIMEOUT)
       if readers
         readers.first.map { |reader| worker_pid(reader) }
       else
@@ -77,6 +76,32 @@ module Coolie
       worker_pids.each do |wpid|
         stop_worker wpid
         start_worker
+      end
+    end
+
+    def maintain_number_of_workers
+      if worker_count > @number_of_workers
+        decrease_workers
+      elsif worker_count < @number_of_workers
+        increase_workers
+      end
+    end
+
+    def increase_workers
+      start_worker until worker_count == @number_of_workers
+    end
+
+    def decrease_workers
+      until worker_count == @number_of_workers do
+        stop_worker(@workers.first.fetch(:pid))
+      end 
+    end
+
+    def worker_pipes
+      if worker_count > 0
+        @workers.map { |w| w.fetch(:reader) }
+      else
+        nil
       end
     end
 
@@ -93,6 +118,12 @@ module Coolie
         puts "Waiting for workers to stop"
         stop_all
         exit 0
+      end
+      Signal.trap 'TTIN' do
+        @number_of_workers += 1
+      end
+      Signal.trap 'TTOU' do
+        @number_of_workers -= 1 if @number_of_workers > 0
       end
     end
 

@@ -138,37 +138,31 @@ module Coolie
     describe 'when number of workers is zero' do
       let(:master) { Master.new nil, workers: 0 }
 
-      it 'should not attach signal handler' do
-        Signal.should_not_receive(:trap)
-        master.start
-      end
-
       it 'should not start workers' do
+        master.stub :monitor_workers
         master.should_not_receive :start_worker
         master.start
       end
 
-      it 'should not monitor workers' do
-        master.should_not_receive(:monitor_workers)
-        master.start
+      it 'should return an empty array from pids_of_crashed_workers' do
+        IO.should_receive(:select).with(nil, nil, nil, Master::IO_TIMEOUT) { nil }
+        master.send(:pids_of_crashed_workers).should eq([])
       end
     end
 
-    describe 'when number of workers is non-zero' do
-      let(:master) { Master.new nil, workers: 2 }
+    it 'attaches a signal handler when started' do
+      Signal.should_receive(:trap).with('INT')
+      Signal.should_receive(:trap).with('TTIN')
+      Signal.should_receive(:trap).with('TTOU')
+      master.stub :start_worker
+      master.stub :monitor_workers
+      master.start
+    end
 
-      it 'attaches a signal handler when started' do
-        Signal.should_receive(:trap).with('INT')
-        master.stub :start_worker
-        master.stub :monitor_workers
-        master.start
-      end
-
-      it 'should monitor the workers' do
-        master.stub :start_worker
-        master.should_receive :monitor_workers
-        master.start
-      end
+    it 'should monitor the workers' do
+      master.stub :start_worker
+      master.should_receive :monitor_workers
+      master.start
     end
 
     it 'stops workers and start new ones when receiving the restart_workers message' do
@@ -203,6 +197,25 @@ module Coolie
       IO.should_receive(:select).with(readers, nil, nil, Master::IO_TIMEOUT) { [readers, [], []] }
       master.should_receive(:worker_pid).twice.and_call_original
       master.send(:pids_of_crashed_workers).should eq([666, 999])
+    end
+
+    it 'increases workers if there is too few' do
+      master = Master.new nil, workers: 2
+      master.stub(:fork) { rand(10_000_000) }
+      master.should_receive(:start_worker).twice.and_call_original
+      master.send :maintain_number_of_workers
+    end
+
+    it 'decreases workers if there is too many' do
+      Process.stub(:kill)
+      Process.stub(:waitpid2)
+      master = Master.new nil, workers: 0
+      master.stub(:fork) { rand(10_000_000) }
+      master.start_worker
+      master.start_worker
+      master.should_receive(:stop_worker).and_call_original
+      master.should_receive(:stop_worker).and_call_original
+      master.send :maintain_number_of_workers
     end
   end
 end
