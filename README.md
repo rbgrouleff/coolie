@@ -43,9 +43,14 @@ When stopping workers, they are allowed to finish what they are doing,
 before they stop. Which means you're screwed right now, if the `perform`
 method in your job never returns.
 
-The master registers a signal handler when you send it the `start`
-message, which responds to `^C`. This triggers a graceful shutdown that
-stops the workers and exits the run loop.
+The master registers signal handlers when you send it the `start`
+message and enters a run loop.
+
+The signals the master responds to are:
+
+- `SIGINT` tells the master to gracefully stop all workers and shut down
+- `SIGTTIN` tells the master to spawn a new worker
+- `SIGTTOU` tells the master to stop a worker
 
 Things missing
 --------------
@@ -59,8 +64,8 @@ There are, however, still features that are missing:
 
 - Force killing workers
 - Daemonization of the master
+- The master should have a shutdown immediately signal
 - Communication with the master through signals (something like [Unicorn] [unicorn])
-- Signals for adding and removing workers
 - Basic logging
 - Some sort of error handling
 - Some sort of reaping of worker processes
