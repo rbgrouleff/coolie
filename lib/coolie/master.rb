@@ -1,3 +1,4 @@
+require 'timeout'
 require_relative './worker'
 
 module Coolie
@@ -41,11 +42,8 @@ module Coolie
     end
 
     def stop_worker(wpid)
-      if worker = @workers.find { |w| w.fetch(:pid) == wpid }
-        @workers.delete worker
+      if @workers.find { |w| w.fetch(:pid) == wpid }
         Process.kill 'INT', wpid
-        Process.waitpid2 wpid
-        worker.fetch(:reader).close
       else
         raise "Unknown worker PID: #{wpid}"
       end
@@ -55,6 +53,9 @@ module Coolie
       @workers.each do |worker|
         stop_worker worker.fetch(:pid)
       end
+      Timeout.timeout(30) do
+        watch_for_shutdown while worker_count > 0
+      end
     end
 
     def worker_count
@@ -62,6 +63,15 @@ module Coolie
     end
 
     private
+
+    def watch_for_shutdown
+      wpid, status = Process.wait2
+      worker = @workers.find { |w| w.fetch(:pid) == wpid }
+      worker.fetch(:reader).close
+      @workers.delete worker
+      wpid
+    rescue Errno::ECHILD
+    end
 
     def watch_for_output
       loop do
@@ -94,6 +104,7 @@ module Coolie
 
     def restart_worker(wpid)
       stop_worker wpid
+      watch_for_shutdown
       start_worker
     end
 
