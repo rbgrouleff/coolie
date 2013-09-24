@@ -24,7 +24,11 @@ module Coolie
     def perform_job
       if child = fork
         _, status = Process.waitpid2 child
-        @output.write UNCAUGHT_ERROR unless status.success? || stopped?
+        begin
+          @output.write UNCAUGHT_ERROR unless status.success? || stopped?
+        rescue Errno::EAGAIN, Errno::EINT
+          # Ignore
+        end
       else
         self.process_name = "Child of worker #{Process.ppid}"
         begin
