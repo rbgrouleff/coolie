@@ -30,6 +30,7 @@ module Coolie
     def start_worker
       reader, writer = IO.pipe
       if wpid = fork
+        puts "start_worker #{wpid}"
         writer.close
         @workers << { pid: wpid, reader: reader }
       else
