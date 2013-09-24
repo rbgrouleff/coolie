@@ -83,7 +83,7 @@ module Coolie
       rescue Errno::EAGAIN, Errno::EINTR
         # Ignore
       end
-      process_output(pipes & worker_pipes)
+      process_output(pipes & worker_pipes) unless stopping?
     end
 
     def process_output(pipes)
