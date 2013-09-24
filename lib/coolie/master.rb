@@ -42,6 +42,7 @@ module Coolie
 
     def stop_worker(wpid)
       if worker = @workers.find { |w| w.fetch(:pid) == wpid }
+        puts "stop_worker #{wpid}"
         Process.kill 'INT', wpid
         Process.waitpid2 wpid
         worker.fetch(:reader).close
@@ -52,6 +53,7 @@ module Coolie
     end
 
     def stop_all
+      puts "stop_all"
       @workers.each do |worker|
         stop_worker worker.fetch(:pid)
       end
@@ -93,6 +95,7 @@ module Coolie
     end
 
     def restart_worker(wpid)
+      puts "restart_worker #{wpid}"
       stop_worker wpid
       start_worker
     end
