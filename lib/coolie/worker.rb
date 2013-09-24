@@ -28,8 +28,8 @@ module Coolie
           @output.write UNCAUGHT_ERROR unless status.success? || stopped?
         rescue Errno::EAGAIN, Errno::EINTR
           # Ignore
-        rescue Exception
-          puts Process.pid
+        rescue Exception => e
+          puts e
           raise
         end
       else
