@@ -126,7 +126,7 @@ module Coolie
       @selfpipe[:writer].write_nonblock('.')
     rescue Errno::EAGAIN
       # Ignore
-    rescue Errno::EINT
+    rescue Errno::EINTR
       retry
     end
 
