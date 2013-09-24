@@ -65,7 +65,7 @@ module Coolie
     private
 
     def watch_for_shutdown
-      wpid, status = Process.wait2
+      wpid, _ = Process.wait2
       worker = @workers.find { |w| w.fetch(:pid) == wpid }
       worker.fetch(:reader).close
       @workers.delete worker
@@ -103,9 +103,9 @@ module Coolie
     end
 
     def restart_worker(wpid)
+      start_worker
       stop_worker wpid
       watch_for_shutdown
-      start_worker
     end
 
     def worker_pipes
