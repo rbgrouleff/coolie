@@ -4,6 +4,8 @@ module Coolie
   class Master
     IO_TIMEOUT = 10
 
+    HANDLED_SIGNALS = ['INT', 'TTIN', 'TTOU']
+
     def initialize(job, options = {})
       @number_of_workers = options.fetch :workers, 0
       @workers = []
@@ -114,17 +116,41 @@ module Coolie
     end
 
     def trap_signals
-      Signal.trap 'INT' do
-        puts "Waiting for workers to stop"
-        stop_all
-        exit 0
+      HANDLED_SIGNALS.each do |signal|
+        Signal.trap signal do
+          handle_signal signal
+        end
       end
-      Signal.trap 'TTIN' do
-        @number_of_workers += 1
+    end
+
+    def queue_signal(signal)
+    end
+
+    def handle_signal(signal)
+      case signal
+      when :INT
+        handle_int
+      when :TTIN
+        handle_ttin
+      when :TTOU
+        handle_ttou
+      else
+        raise "Unknown signal"
       end
-      Signal.trap 'TTOU' do
-        @number_of_workers -= 1 if @number_of_workers > 0
-      end
+    end
+
+    def handle_int
+      puts "Waiting for workers to stop"
+      stop_all
+      exit 0
+    end
+
+    def handle_ttin
+      @number_of_workers += 1
+    end
+
+    def handle_ttou
+      @number_of_workers -= 1 if @number_of_workers > 0
     end
 
     def process_name=(name)
