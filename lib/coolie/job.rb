@@ -1,4 +1,4 @@
-module Coolie
+module Sisyphus
   class Job
     def setup
     end

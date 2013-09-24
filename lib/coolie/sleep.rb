@@ -1,6 +1,6 @@
 require_relative './job'
 
-module Coolie
+module Sisyphus
   class Sleep < Job
     def perform
       sleep 2

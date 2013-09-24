@@ -1,8 +1,8 @@
 require "version"
-require 'coolie/job'
-require 'coolie/worker'
-require 'coolie/master'
+require 'sisyphus/job'
+require 'sisyphus/worker'
+require 'sisyphus/master'
 
-module Coolie
+module Sisyphus
   # Your code goes here...
 end

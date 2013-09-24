@@ -1,6 +1,6 @@
-require_relative '../../lib/coolie/master'
+require_relative '../../lib/sisyphus/master'
 
-module Coolie
+module Sisyphus
   describe Master do
     subject(:master) { Master.new job }
 

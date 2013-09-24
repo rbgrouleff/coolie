@@ -1,7 +1,7 @@
 require 'timeout'
 require_relative './worker'
 
-module Coolie
+module Sisyphus
   class Master
     IO_TIMEOUT = 10
 
@@ -24,7 +24,7 @@ module Coolie
         start_worker
         sleep rand(1000).fdiv(1000)
       end
-      puts "Coolie::Master started with PID: #{Process.pid}"
+      puts "Sisyphus::Master started with PID: #{Process.pid}"
       watch_for_output
     end
 

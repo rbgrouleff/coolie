@@ -4,13 +4,13 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "coolie"
-  spec.version       = Coolie::VERSION
+  spec.name          = "sisyphus"
+  spec.version       = Sisyphus::VERSION
   spec.authors       = ["Rasmus Bang Grouleff"]
   spec.email         = ["rasmusbg@virtualmanager.com"]
   spec.description   = %q{A tiny library for spawning worker processes}
   spec.summary       = %q{A tiny library for spawning worker processes}
-  spec.homepage      = "https://github.com/rbgrouleff/coolie"
+  spec.homepage      = "https://github.com/rbgrouleff/sisyphus"
   spec.license       = "Apache License 2.0"
 
   spec.files         = `git ls-files`.split($/)

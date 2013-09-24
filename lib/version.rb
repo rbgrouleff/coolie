@@ -1,3 +1,3 @@
-module Coolie
+module Sisyphus
   VERSION = "0.2.1"
 end

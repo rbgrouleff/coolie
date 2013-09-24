@@ -1,6 +1,6 @@
-require_relative '../../lib/coolie/worker'
+require_relative '../../lib/sisyphus/worker'
 
-module Coolie
+module Sisyphus
   describe Worker do
     let(:job) { double :job }
     let(:output) { double :pipe }

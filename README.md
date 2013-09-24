@@ -1,7 +1,7 @@
-Coolie
+Sisyphus
 ======
 
-Coolie provides a really simple way of starting and stopping multiple parallel
+Sisyphus provides a really simple way of starting and stopping multiple parallel
 worker processes that are meant to run repeatedly in an efficient way.
 
 It requires no frameworks, databases or anything. It just does what you
@@ -23,8 +23,8 @@ Getting started
 ---------------
 
 1. Add `gem 'coolie'` to your Gemfile and run `bundle`
-2. Subclass `Coolie::Job` and implement the `perform` method
-3. Instantiate the `Coolie::Master`, giving it an instance of your job
+2. Subclass `Sisyphus::Job` and implement the `perform` method
+3. Instantiate the `Sisyphus::Master`, giving it an instance of your job
    and optionally an options hash with the key `:workers` specifying the
    number of workers you need
 4. You can start workers by doing one of the following things:
@@ -55,7 +55,7 @@ The signals the master responds to are:
 Things missing
 --------------
 
-Coolie is still very much in its infancy, though the ambition isn't to build a [Resque] [resque] clone, but
+Sisyphus is still very much in its infancy, though the ambition isn't to build a [Resque] [resque] clone, but
 instead build as small a tool with as few features as possible.
 
 [resque]: https://github.com/resque/resque
