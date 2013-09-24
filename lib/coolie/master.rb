@@ -55,6 +55,7 @@ module Coolie
 
     def stop_all
       puts "stop_all"
+      p @workers
       @workers.each do |worker|
         stop_worker worker.fetch(:pid)
       end
