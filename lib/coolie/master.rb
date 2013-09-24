@@ -70,9 +70,9 @@ module Coolie
     def watch_for_output
       loop do
         ready = IO.select(worker_pipes + [@selfpipe[:reader]], nil, nil, IO_TIMEOUT)
-        process_signal_queue
         if ready
           process_pipes(ready[0])
+          process_signal_queue
         end
       end
     end
