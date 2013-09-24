@@ -88,26 +88,11 @@ module Coolie
           Process.should_receive(:kill).with('INT', 666)
           master.stop_worker(666)
         end
-
-        it 'waits for the killed child to stop' do
-          Process.should_receive(:waitpid2).with(666)
-          master.stop_worker(666)
-        end
-
-        it 'closes the reader pipe associated with the worker' do
-          pipes.first.should_receive :close
-          master.stop_worker 666
-        end
-
-        it 'decreases worker_count' do
-          master.stop_worker(666)
-          master.worker_count.should eq(0)
-        end
       end
 
       it 'stops all workers when receiving stop_all' do
         Process.stub(:kill).with('INT', 666)
-        Process.stub(:waitpid2).with(666)
+        Process.stub(:wait2) { 666 }
 
         master.should_receive(:stop_worker).with(666).exactly(master.worker_count).times.and_call_original
 
@@ -177,27 +162,6 @@ module Coolie
 
     it 'raises if it can\'t resolve a wpid from a reader pipe' do
       expect { master.send(:worker_pid, pipes.first) }.to raise_error("Unknown worker pipe")
-    end
-
-    it 'increases workers if there is too few' do
-      master = Master.new nil, workers: 2
-      master.stub :puts
-      master.stub(:fork) { rand(10_000_000) }
-      master.should_receive(:start_worker).twice.and_call_original
-      master.send :maintain_number_of_workers
-    end
-
-    it 'decreases workers if there is too many' do
-      Process.stub(:kill)
-      Process.stub(:waitpid2)
-      master = Master.new nil, workers: 0
-      master.stub :puts
-      master.stub(:fork) { rand(10_000_000) }
-      master.start_worker
-      master.start_worker
-      master.should_receive(:stop_worker).and_call_original
-      master.should_receive(:stop_worker).and_call_original
-      master.send :maintain_number_of_workers
     end
   end
 end
