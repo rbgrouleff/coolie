@@ -144,6 +144,7 @@ module Coolie
     end
 
     def handle_int
+      puts "Waiting for workers to stop..."
       stop
       stop_all
       exit 0
