@@ -13,7 +13,11 @@ module Coolie
 
       loop do
         break if stopped?
-        perform_job
+        begin
+          perform_job
+        rescue Exception
+          # Ignore
+        end
       end
 
       exit 0
@@ -28,9 +32,6 @@ module Coolie
           @output.write UNCAUGHT_ERROR unless status.success? || stopped?
         rescue Errno::EAGAIN, Errno::EINTR
           # Ignore
-        rescue Exception => e
-          puts e
-          raise
         end
       else
         self.process_name = "Child of worker #{Process.ppid}"
