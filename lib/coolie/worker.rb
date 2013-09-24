@@ -13,11 +13,7 @@ module Coolie
 
       loop do
         break if stopped?
-        begin
-          perform_job
-        rescue Exception
-          # Ignore
-        end
+        perform_job
       end
 
       exit 0
