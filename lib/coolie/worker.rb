@@ -28,6 +28,9 @@ module Coolie
           @output.write UNCAUGHT_ERROR unless status.success? || stopped?
         rescue Errno::EAGAIN, Errno::EINTR
           # Ignore
+        rescue Exception
+          puts Process.pid
+          raise
         end
       else
         self.process_name = "Child of worker #{Process.ppid}"
