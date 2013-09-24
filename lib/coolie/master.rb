@@ -30,7 +30,6 @@ module Coolie
     def start_worker
       reader, writer = IO.pipe
       if wpid = fork
-        puts "start_worker #{wpid}"
         writer.close
         @workers << { pid: wpid, reader: reader }
       else
@@ -43,7 +42,6 @@ module Coolie
 
     def stop_worker(wpid)
       if worker = @workers.find { |w| w.fetch(:pid) == wpid }
-        puts "stop_worker #{wpid}"
         Process.kill 'INT', wpid
         Process.waitpid2 wpid
         worker.fetch(:reader).close
@@ -54,8 +52,6 @@ module Coolie
     end
 
     def stop_all
-      puts "stop_all"
-      p @workers
       @workers.each do |worker|
         stop_worker worker.fetch(:pid)
       end
@@ -97,7 +93,6 @@ module Coolie
     end
 
     def restart_worker(wpid)
-      puts "restart_worker #{wpid}"
       stop_worker wpid
       start_worker
     end
@@ -149,7 +144,6 @@ module Coolie
     end
 
     def handle_int
-      puts "Waiting for workers to stop"
       stop
       stop_all
       exit 0
