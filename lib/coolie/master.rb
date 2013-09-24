@@ -88,7 +88,7 @@ module Coolie
 
     def process_output(pipes)
       pipes.each do |pipe|
-        restart_worker worker_pid(pipe)
+        restart_worker worker_pid(pipe) unless stopping?
       end
     end
 
@@ -145,6 +145,7 @@ module Coolie
 
     def handle_int
       puts "Waiting for workers to stop"
+      stop
       stop_all
       exit 0
     end
@@ -159,6 +160,14 @@ module Coolie
         @number_of_workers -= 1
         stop_worker(@workers.first.fetch(:pid))
       end
+    end
+
+    def stop
+      @stopping = true
+    end
+
+    def stopping?
+      @stopping
     end
 
     def process_name=(name)

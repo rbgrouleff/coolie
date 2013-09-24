@@ -34,8 +34,7 @@ module Coolie
         begin
           @job.perform
           exit 0
-        rescue Exception => e
-          p e
+        rescue Exception
           exit 1
         end
       end
