@@ -90,37 +90,11 @@ module Coolie
       pipes.each do |pipe|
         restart_worker worker_pid(pipe)
       end
-      maintain_number_of_workers
     end
 
     def restart_worker(wpid)
       stop_worker wpid
       start_worker
-    end
-
-    def monitor_workers
-      loop do
-        restart_workers pids_of_crashed_workers
-        maintain_number_of_workers
-      end
-    end
-
-    def maintain_number_of_workers
-      if worker_count > @number_of_workers
-        decrease_workers
-      elsif worker_count < @number_of_workers
-        increase_workers
-      end
-    end
-
-    def increase_workers
-      start_worker until worker_count == @number_of_workers
-    end
-
-    def decrease_workers
-      until worker_count == @number_of_workers do
-        stop_worker(@workers.first.fetch(:pid))
-      end
     end
 
     def worker_pipes
@@ -177,10 +151,14 @@ module Coolie
 
     def handle_ttin
       @number_of_workers += 1
+      start_worker
     end
 
     def handle_ttou
-      @number_of_workers -= 1 if @number_of_workers > 0
+      if @number_of_workers > 0
+        @number_of_workers -= 1
+        stop_worker(@workers.first.fetch(:pid))
+      end
     end
 
     def process_name=(name)
