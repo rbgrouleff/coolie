@@ -26,7 +26,7 @@ module Coolie
         _, status = Process.waitpid2 child
         begin
           @output.write UNCAUGHT_ERROR unless status.success? || stopped?
-        rescue Errno::EAGAIN, Errno::EINT
+        rescue Errno::EAGAIN, Errno::EINTR
           # Ignore
         end
       else
