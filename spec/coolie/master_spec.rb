@@ -4,6 +4,8 @@ module Coolie
   describe Master do
     subject(:master) { Master.new job }
 
+    before(:each) { master.stub :puts }
+
     let(:job) { double(:job) }
     let(:pipes) { [double(:reader_pipe), double(:writer_pipe)] }
 
@@ -130,7 +132,8 @@ module Coolie
 
     it 'starts the specified number of workers when started' do
       master = Master.new nil, workers: 3
-      master.stub :monitor_workers
+      master.stub :puts
+      master.stub :watch_for_output
       master.should_receive(:start_worker).exactly(3).times
       master.start
     end
@@ -138,37 +141,28 @@ module Coolie
     describe 'when number of workers is zero' do
       let(:master) { Master.new nil, workers: 0 }
 
+      before(:each) { master.stub :puts }
+
       it 'should not start workers' do
-        master.stub :monitor_workers
+        master.stub :watch_for_output
         master.should_not_receive :start_worker
         master.start
-      end
-
-      it 'should return an empty array from pids_of_crashed_workers' do
-        IO.should_receive(:select).with(nil, nil, nil, Master::IO_TIMEOUT) { nil }
-        master.send(:pids_of_crashed_workers).should eq([])
       end
     end
 
     it 'attaches a signal handler when started' do
-      Signal.should_receive(:trap).with('INT')
-      Signal.should_receive(:trap).with('TTIN')
-      Signal.should_receive(:trap).with('TTOU')
+      Signal.should_receive(:trap).with(:INT)
+      Signal.should_receive(:trap).with(:TTIN)
+      Signal.should_receive(:trap).with(:TTOU)
       master.stub :start_worker
-      master.stub :monitor_workers
+      master.stub :watch_for_output
       master.start
     end
 
-    it 'should monitor the workers' do
+    it 'should watch for output' do
       master.stub :start_worker
-      master.should_receive :monitor_workers
+      master.should_receive :watch_for_output
       master.start
-    end
-
-    it 'stops workers and start new ones when receiving the restart_workers message' do
-      master.should_receive(:stop_worker).exactly(:twice)
-      master.should_receive(:start_worker).exactly(:twice)
-      master.send(:restart_workers, [333, 666])
     end
 
     it 'can resolve a wpid from a reader pipe' do
@@ -185,22 +179,9 @@ module Coolie
       expect { master.send(:worker_pid, pipes.first) }.to raise_error("Unknown worker pipe")
     end
 
-    it 'returns the pids of crashed workers' do
-      readers = [double(:reader), double(:reader)]
-      readers.each_with_index do |reader, index|
-        reader.stub(:fileno) { index+1 }
-      end
-      master.instance_variable_set(:@workers, [
-        { pid: 666, reader: readers.first },
-        { pid: 999, reader: readers.last },
-      ])
-      IO.should_receive(:select).with(readers, nil, nil, Master::IO_TIMEOUT) { [readers, [], []] }
-      master.should_receive(:worker_pid).twice.and_call_original
-      master.send(:pids_of_crashed_workers).should eq([666, 999])
-    end
-
     it 'increases workers if there is too few' do
       master = Master.new nil, workers: 2
+      master.stub :puts
       master.stub(:fork) { rand(10_000_000) }
       master.should_receive(:start_worker).twice.and_call_original
       master.send :maintain_number_of_workers
@@ -210,6 +191,7 @@ module Coolie
       Process.stub(:kill)
       Process.stub(:waitpid2)
       master = Master.new nil, workers: 0
+      master.stub :puts
       master.stub(:fork) { rand(10_000_000) }
       master.start_worker
       master.start_worker

@@ -4,12 +4,17 @@ module Coolie
   class Master
     IO_TIMEOUT = 10
 
-    HANDLED_SIGNALS = ['INT', 'TTIN', 'TTOU']
+    HANDLED_SIGNALS = [:INT, :TTIN, :TTOU]
 
     def initialize(job, options = {})
       @number_of_workers = options.fetch :workers, 0
       @workers = []
       @job = job
+
+      self_reader, self_writer = IO.pipe
+      @selfpipe = { reader: self_reader, writer: self_writer }
+
+      Thread.main[:signal_queue] = []
     end
 
     def start
@@ -19,7 +24,7 @@ module Coolie
         sleep rand(1000).fdiv(1000)
       end
       puts "Coolie::Master started with PID: #{Process.pid}"
-      monitor_workers
+      watch_for_output
     end
 
     def start_worker
@@ -37,7 +42,7 @@ module Coolie
 
     def stop_worker(wpid)
       if worker = @workers.find { |w| w.fetch(:pid) == wpid }
-        Process.kill "INT", wpid
+        Process.kill 'INT', wpid
         Process.waitpid2 wpid
         worker.fetch(:reader).close
         @workers.delete worker
@@ -58,26 +63,45 @@ module Coolie
 
     private
 
+    def watch_for_output
+      loop do
+        process_signal_queue
+        ready = IO.select(worker_pipes + [@selfpipe[:reader]], nil, nil, IO_TIMEOUT)
+        if ready
+          process_pipes(ready[0])
+        end
+      end
+    end
+
+    def process_signal_queue
+      handle_signal(Thread.main[:signal_queue].shift) until Thread.main[:signal_queue].empty?
+    end
+
+    def process_pipes(pipes)
+      begin
+        @selfpipe[:reader].read_nonblock(10) if pipes.include?(@selfpipe[:reader])
+      rescue Errno::EAGAIN, Errno::EINTR
+        # Ignore
+      end
+      process_output(pipes & worker_pipes)
+    end
+
+    def process_output(pipes)
+      pipes.each do |pipe|
+        restart_worker worker_pid(pipe)
+      end
+      maintain_number_of_workers
+    end
+
+    def restart_worker(wpid)
+      stop_worker wpid
+      start_worker
+    end
+
     def monitor_workers
       loop do
         restart_workers pids_of_crashed_workers
         maintain_number_of_workers
-      end
-    end
-
-    def pids_of_crashed_workers
-      readers = IO.select(worker_pipes, nil, nil, IO_TIMEOUT)
-      if readers
-        readers.first.map { |reader| worker_pid(reader) }
-      else
-        []
-      end
-    end
-
-    def restart_workers(worker_pids)
-      worker_pids.each do |wpid|
-        stop_worker wpid
-        start_worker
       end
     end
 
@@ -96,14 +120,14 @@ module Coolie
     def decrease_workers
       until worker_count == @number_of_workers do
         stop_worker(@workers.first.fetch(:pid))
-      end 
+      end
     end
 
     def worker_pipes
       if worker_count > 0
         @workers.map { |w| w.fetch(:reader) }
       else
-        nil
+        []
       end
     end
 
@@ -118,12 +142,18 @@ module Coolie
     def trap_signals
       HANDLED_SIGNALS.each do |signal|
         Signal.trap signal do
-          handle_signal signal
+          queue_signal signal
         end
       end
     end
 
     def queue_signal(signal)
+      Thread.main[:signal_queue] << signal
+      @selfpipe[:writer].write_nonblock('.')
+    rescue Errno::EAGAIN
+      # Ignore
+    rescue Errno::EINT
+      retry
     end
 
     def handle_signal(signal)
