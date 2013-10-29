@@ -7,7 +7,7 @@ module Sisyphus
     let(:worker) { Worker.new job, output }
 
     it 'traps signals when started' do
-      worker.stub :exit
+      worker.stub :exit!
       worker.instance_variable_set(:@stopped, true)
       worker.should_receive :trap_signals
       worker.start
@@ -15,7 +15,7 @@ module Sisyphus
 
     it 'exits when it has been stopped' do
       worker.instance_variable_set(:@stopped, true)
-      worker.should_receive :exit
+      worker.should_receive :exit!
       worker.start
     end
 
@@ -42,19 +42,19 @@ module Sisyphus
 
       it 'should perform the job' do
         job.should_receive :perform
-        worker.stub :exit
+        worker.stub :exit!
         worker.send :perform_job
       end
 
       it 'should exit after having performed the job' do
         job.stub :perform
-        worker.should_receive(:exit).with 0
+        worker.should_receive(:exit!).with 0
         worker.send :perform_job
       end
 
       it 'should change process name' do
         job.stub :perform
-        worker.stub :exit
+        worker.stub :exit!
         Process.stub(:ppid) { 666 }
         worker.should_receive(:process_name=).with "Child of worker 666"
         worker.send :perform_job
@@ -63,7 +63,7 @@ module Sisyphus
       context 'when job.perform raises an error' do
         it 'should exit with a non-zero status' do
           job.stub(:perform).and_raise Exception.new "should be rescued!"
-          worker.should_receive(:exit).with(1)
+          worker.should_receive(:exit!).with(1)
           worker.send :perform_job
         end
       end

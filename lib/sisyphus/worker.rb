@@ -16,7 +16,7 @@ module Sisyphus
         perform_job
       end
 
-      exit 0
+      exit! 0
     end
 
     private
@@ -33,9 +33,9 @@ module Sisyphus
         self.process_name = "Child of worker #{Process.ppid}"
         begin
           @job.perform
-          exit 0
+          exit! 0
         rescue Exception
-          exit 1
+          exit! 1
         end
       end
     end
