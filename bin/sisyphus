@@ -1,5 +1,35 @@
 #!/usr/bin/env ruby
 
 require 'sisyphus'
+require 'optparse'
 
-puts "Hello, goodbye"
+OptionParser.new do |opts|
+  cmd = File.basename($0)
+  opts.banner = "Usage: #{cmd} options"
+
+  opts.on '-D', '--daemonize', 'run daemonized in the background' do |d|
+    puts "daemonizing"
+  end
+
+  opts.on '-P', '--pid=FILE', 'the path to the pid file', 'this is ignored, unless -D/--daemonize is set' do |p|
+    puts p
+  end
+
+  opts.on '-w', '--number-of-workers=NUM', 'number of workers to spawn' do |w|
+    p Integer(w)
+  end
+
+  opts.on_tail '-h', '--help', 'show this message' do
+    puts opts.to_s
+    exit
+  end
+
+  opts.on_tail '-v', '--version', 'show version' do
+    puts "#{cmd} v#{Sisyphus::VERSION}"
+    exit
+  end
+
+  opts.parse! ARGV
+end
+
+p ARGV[0]
