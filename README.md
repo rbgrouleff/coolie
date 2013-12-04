@@ -28,7 +28,9 @@ Getting started
    and optionally an options hash with the key `:workers` specifying the
    number of workers you need. You can also optionally specify a
    `:logger` in the options hash. This is used to log any exceptions the
-   master or workers encounter.
+   master or workers encounter. The logger should quack like a Logger
+   instance from the Ruby stdlib. Exceptions are logged with the
+   `Logger::WARN` level.
 4. You can start workers by doing one of the following things:
    * Send the `start` message to the master, if the `options` hash was
      provided. This starts a run loop which monitors workers and
