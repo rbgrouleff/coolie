@@ -26,7 +26,9 @@ Getting started
 2. Subclass `Sisyphus::Job` and implement the `perform` method
 3. Instantiate the `Sisyphus::Master`, giving it an instance of your job
    and optionally an options hash with the key `:workers` specifying the
-   number of workers you need
+   number of workers you need. You can also optionally specify a
+   `:logger` in the options hash. This is used to log any exceptions the
+   master or workers encounter.
 4. You can start workers by doing one of the following things:
    * Send the `start` message to the master, if the `options` hash was
      provided. This starts a run loop which monitors workers and
