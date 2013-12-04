@@ -2,10 +2,12 @@ module Sisyphus
   class Worker
     UNCAUGHT_ERROR = '.'
 
-    def initialize(job, output)
+    attr_reader :logger
+
+    def initialize(job, output, logger)
       @job = job
       @output = output
-      setup
+      @logger = logger
     end
 
     def start
@@ -34,7 +36,8 @@ module Sisyphus
         begin
           @job.perform
           exit! 0
-        rescue Exception
+        rescue Exception => e
+          logger.warn(process_name) { e }
           exit! 1
         end
       end
@@ -60,6 +63,10 @@ module Sisyphus
 
     def process_name=(name)
       $0 = name
+    end
+
+    def process_name
+      $0
     end
   end
 end

@@ -4,7 +4,8 @@ module Sisyphus
   describe Worker do
     let(:job) { double :job }
     let(:output) { double :pipe }
-    let(:worker) { Worker.new job, output }
+    let(:logger) { double :logger }
+    let(:worker) { Worker.new job, output, logger }
 
     it 'traps signals when started' do
       worker.stub :exit!
@@ -23,7 +24,7 @@ module Sisyphus
       it 'does not call job.setup' do
         job.stub(:respond_to?).with(:setup) { false }
         job.should_not_receive :setup
-        Worker.new job, output
+        Worker.new job, output, logger
       end
     end
 
@@ -62,8 +63,16 @@ module Sisyphus
 
       context 'when job.perform raises an error' do
         it 'should exit with a non-zero status' do
+          logger.stub :warn
           job.stub(:perform).and_raise Exception.new "should be rescued!"
           worker.should_receive(:exit!).with(1)
+          worker.send :perform_job
+        end
+
+        it 'should log the raised error' do
+          worker.stub(:exit!).with(1)
+          job.stub(:perform).and_raise Exception.new "should be rescued!"
+          logger.should_receive :warn
           worker.send :perform_job
         end
       end

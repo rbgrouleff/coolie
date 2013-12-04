@@ -1,5 +1,6 @@
 require 'timeout'
 require_relative './worker'
+require_relative './null_logger'
 
 module Sisyphus
   class Master
@@ -7,8 +8,11 @@ module Sisyphus
 
     HANDLED_SIGNALS = [:INT, :TTIN, :TTOU]
 
+    attr_reader :logger
+
     def initialize(job, options = {})
       @number_of_workers = options.fetch :workers, 0
+      @logger = options.fetch :logger, NullLogger.new
       @workers = []
       @job = job
 

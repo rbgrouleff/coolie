@@ -39,7 +39,7 @@ module Sisyphus
         end
 
         it 'gives the writer pipe to the worker' do
-          Worker.should_receive(:new).with(job, pipes.last) { worker }
+          Worker.should_receive(:new).with(job, pipes.last, master.logger) { worker }
           master.start_worker
         end
 
