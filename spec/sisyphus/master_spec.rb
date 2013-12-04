@@ -25,7 +25,13 @@ module Sisyphus
           Process.stub(:pid) { 666 }
           master.stub :exit!
           Worker.stub(:new) { worker }
+          worker.stub(:setup)
           worker.stub(:start)
+        end
+
+        it 'should setup the worker' do
+          worker.should_receive :setup
+          master.start_worker
         end
 
         it 'should rename the process' do
@@ -46,6 +52,26 @@ module Sisyphus
         it 'closes the reader pipe' do
           pipes.first.should_receive :close
           master.start_worker
+        end
+
+        describe 'when an exception is raised' do
+          let(:logger) { double(:logger) }
+
+          it 'should log the exception' do
+            master.stub(:logger).and_return logger
+            pipes.last.stub(:write)
+            worker.stub(:setup).and_raise :raised_by_spec
+            logger.should_receive :warn
+            master.start_worker
+          end
+
+          it 'should write to the writer pipe' do
+            master.stub(:logger).and_return logger
+            worker.stub(:setup).and_raise :raised_by_spec
+            logger.stub :warn
+            pipes.last.should_receive(:write).with Worker::UNCAUGHT_ERROR
+            master.start_worker
+          end
         end
       end
 
@@ -103,7 +129,7 @@ module Sisyphus
     describe 'when there are no running workers' do
       describe 'and it receives stop_worker' do
         it 'raises an error' do
-          expect { master.stop_worker(666) }.to raise_error("Unknown worker PID: #{666}")
+          expect { master.stop_worker(666) }.not_to raise_error
         end
       end
 

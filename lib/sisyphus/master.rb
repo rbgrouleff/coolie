@@ -39,17 +39,22 @@ module Sisyphus
         @workers << { pid: wpid, reader: reader }
       else
         reader.close
-        worker = Worker.new(@job, writer)
         self.process_name = "Worker #{Process.pid}"
-        worker.start
+        begin
+          worker = Worker.new(@job, writer, logger)
+          worker.setup
+          worker.start
+        rescue Exception => e
+          writer.write Worker::UNCAUGHT_ERROR
+          logger.warn(process_name) { e }
+          exit! 0
+        end
       end
     end
 
     def stop_worker(wpid)
       if @workers.find { |w| w.fetch(:pid) == wpid }
-        Process.kill 'INT', wpid
-      else
-        raise "Unknown worker PID: #{wpid}"
+        Process.kill 'INT', wpid rescue Errno::ESRCH # Ignore if the process is already gone
       end
     end
 
@@ -187,6 +192,10 @@ module Sisyphus
 
     def process_name=(name)
       $0 = name
+    end
+
+    def process_name
+      $0
     end
   end
 end
