@@ -10,6 +10,10 @@ module Sisyphus
       @logger = logger
     end
 
+    def setup
+      @job.setup if @job.respond_to? :setup
+    end
+
     def start
       trap_signals
 
@@ -55,10 +59,6 @@ module Sisyphus
 
     def stopped?
       @stopped
-    end
-
-    def setup
-      @job.setup if @job.respond_to? :setup
     end
 
     def process_name=(name)

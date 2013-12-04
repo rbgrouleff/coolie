@@ -29,10 +29,10 @@ module Sisyphus
     end
 
     context 'when job responds to :setup' do
-      it 'sets up the job upon initialization' do
+      it 'sets up the job' do
         job.stub(:respond_to?).with(:setup) { true }
         job.should_receive :setup
-        Worker.new job, output
+        worker.setup
       end
     end
 
