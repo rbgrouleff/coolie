@@ -22,7 +22,7 @@ the job receives the `perform` message.
 Getting started
 ---------------
 
-1. Add `gem 'coolie'` to your Gemfile and run `bundle`
+1. Add `gem 'sisyphus'` to your Gemfile and run `bundle`
 2. Subclass `Sisyphus::Job` and implement the `perform` method
 3. Instantiate the `Sisyphus::Master`, giving it an instance of your job
    and optionally an options hash with the key `:workers` specifying the
