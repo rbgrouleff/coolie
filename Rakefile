@@ -5,8 +5,10 @@ task :sleeper do
   gem 'sisyphus'
   require 'sisyphus'
   require 'sisyphus/sleep'
+  require 'logger'
 
+  logger = Logger.new(STDOUT)
   job = Sisyphus::Sleep.new
-  master = Sisyphus::Master.new job, workers: 2
+  master = Sisyphus::Master.new job, workers: 2, logger: logger
   master.start
 end
