@@ -41,7 +41,7 @@ module Sisyphus
         reader.close
         self.process_name = "Worker #{Process.pid}"
         begin
-          worker = ForkingWorker.new(@job, writer, logger)
+          worker = create_worker(writer)
           worker.setup
           worker.start
         rescue Exception => e
@@ -72,6 +72,10 @@ module Sisyphus
     end
 
     private
+
+    def create_worker(writer)
+      ForkingWorker.new(job, writer, logger)
+    end
 
     def watch_for_shutdown
       wpid, _ = Process.wait2
