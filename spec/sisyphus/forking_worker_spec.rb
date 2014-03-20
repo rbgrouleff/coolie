@@ -1,11 +1,11 @@
-require_relative '../../lib/sisyphus/worker'
+require_relative '../../lib/sisyphus/forking_worker'
 
 module Sisyphus
-  describe Worker do
+  describe ForkingWorker do
     let(:job) { double :job }
     let(:output) { double :pipe }
     let(:logger) { double :logger }
-    let(:worker) { Worker.new job, output, logger }
+    let(:worker) { ForkingWorker.new job, output, logger }
 
     it 'traps signals when started' do
       worker.stub :exit!
@@ -24,7 +24,7 @@ module Sisyphus
       it 'does not call job.setup' do
         job.stub(:respond_to?).with(:setup) { false }
         job.should_not_receive :setup
-        Worker.new job, output, logger
+        ForkingWorker.new job, output, logger
       end
     end
 
@@ -99,7 +99,7 @@ module Sisyphus
         end
 
         it 'writes an error message to the output' do
-          output.should_receive(:write).with Worker::UNCAUGHT_ERROR
+          output.should_receive(:write).with ForkingWorker::UNCAUGHT_ERROR
           worker.send :perform_job
         end
 

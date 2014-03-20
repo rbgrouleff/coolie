@@ -24,7 +24,7 @@ module Sisyphus
           pipes.first.stub(:close)
           Process.stub(:pid) { 666 }
           master.stub :exit!
-          Worker.stub(:new) { worker }
+          ForkingWorker.stub(:new) { worker }
           worker.stub(:setup)
           worker.stub(:start)
         end
@@ -45,7 +45,7 @@ module Sisyphus
         end
 
         it 'gives the writer pipe to the worker' do
-          Worker.should_receive(:new).with(job, pipes.last, master.logger) { worker }
+          ForkingWorker.should_receive(:new).with(job, pipes.last, master.logger) { worker }
           master.start_worker
         end
 
@@ -69,7 +69,7 @@ module Sisyphus
             master.stub(:logger).and_return logger
             worker.stub(:setup).and_raise :raised_by_spec
             logger.stub :warn
-            pipes.last.should_receive(:write).with Worker::UNCAUGHT_ERROR
+            pipes.last.should_receive(:write).with ForkingWorker::UNCAUGHT_ERROR
             master.start_worker
           end
         end

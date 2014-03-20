@@ -1,5 +1,5 @@
 module Sisyphus
-  class Worker
+  class ForkingWorker
     UNCAUGHT_ERROR = '.'
 
     attr_reader :logger

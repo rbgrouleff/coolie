@@ -1,5 +1,5 @@
 require 'timeout'
-require_relative './worker'
+require_relative './forking_worker'
 require_relative './null_logger'
 
 module Sisyphus
@@ -41,11 +41,11 @@ module Sisyphus
         reader.close
         self.process_name = "Worker #{Process.pid}"
         begin
-          worker = Worker.new(@job, writer, logger)
+          worker = ForkingWorker.new(@job, writer, logger)
           worker.setup
           worker.start
         rescue Exception => e
-          writer.write Worker::UNCAUGHT_ERROR
+          writer.write ForkingWorker::UNCAUGHT_ERROR
           logger.warn(process_name) { e }
           exit! 0
         end
