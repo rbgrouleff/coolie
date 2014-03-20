@@ -8,10 +8,10 @@ module Sisyphus
 
     HANDLED_SIGNALS = [:INT, :TTIN, :TTOU]
 
-    attr_reader :logger
+    attr_reader :logger, :job, :number_of_workers
 
     def initialize(job, options = {})
-      @number_of_workers = options.fetch :workers, 0
+      self.number_of_workers = options.fetch :workers, 0
       @logger = options.fetch :logger, NullLogger.new
       @workers = []
       @job = job
@@ -24,7 +24,7 @@ module Sisyphus
 
     def start
       trap_signals
-      @number_of_workers.times do
+      number_of_workers.times do
         start_worker
         sleep rand(1000).fdiv(1000)
       end
@@ -36,7 +36,7 @@ module Sisyphus
       reader, writer = IO.pipe
       if wpid = fork
         writer.close
-        @workers << { pid: wpid, reader: reader }
+        workers << { pid: wpid, reader: reader }
       else
         reader.close
         self.process_name = "Worker #{Process.pid}"
@@ -53,13 +53,13 @@ module Sisyphus
     end
 
     def stop_worker(wpid)
-      if @workers.find { |w| w.fetch(:pid) == wpid }
+      if workers.find { |w| w.fetch(:pid) == wpid }
         Process.kill 'INT', wpid rescue Errno::ESRCH # Ignore if the process is already gone
       end
     end
 
     def stop_all
-      @workers.each do |worker|
+      workers.each do |worker|
         stop_worker worker.fetch(:pid)
       end
       Timeout.timeout(30) do
@@ -68,10 +68,13 @@ module Sisyphus
     end
 
     def worker_count
-      @workers.length
+      workers.length
     end
 
     private
+
+    attr_reader :workers
+    attr_writer :number_of_workers
 
     def create_worker(writer)
       ForkingWorker.new(job, writer, logger)
@@ -81,7 +84,7 @@ module Sisyphus
       wpid, _ = Process.wait2
       worker = @workers.find { |w| w.fetch(:pid) == wpid }
       worker.fetch(:reader).close
-      @workers.delete worker
+      workers.delete worker
       wpid
     rescue Errno::ECHILD
     end
@@ -123,14 +126,14 @@ module Sisyphus
 
     def worker_pipes
       if worker_count > 0
-        @workers.map { |w| w.fetch(:reader) }
+        workers.map { |w| w.fetch(:reader) }
       else
         []
       end
     end
 
     def worker_pid(reader)
-      if worker = @workers.find { |w| w.fetch(:reader).fileno == reader.fileno }
+      if worker = workers.find { |w| w.fetch(:reader).fileno == reader.fileno }
         worker.fetch(:pid)
       else
         raise 'Unknown worker pipe'
@@ -175,14 +178,14 @@ module Sisyphus
     end
 
     def handle_ttin
-      @number_of_workers += 1
+      self.number_of_workers += 1
       start_worker
     end
 
     def handle_ttou
-      if @number_of_workers > 0
-        @number_of_workers -= 1
-        stop_worker(@workers.first.fetch(:pid))
+      if number_of_workers > 0
+        self.number_of_workers -= 1
+        stop_worker(workers.first.fetch(:pid))
       end
     end
 
