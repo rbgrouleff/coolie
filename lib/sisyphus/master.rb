@@ -64,8 +64,12 @@ module Sisyphus
       workers.each do |worker|
         stop_worker worker.fetch(:pid)
       end
-      Timeout.timeout(30) do
-        watch_for_shutdown while worker_count > 0
+      begin
+        Timeout.timeout(30) do
+          watch_for_shutdown while worker_count > 0
+        end
+      rescue e
+        p "Timeout reached:", e
       end
     end
 
