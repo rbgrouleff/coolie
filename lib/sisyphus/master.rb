@@ -83,7 +83,7 @@ module Sisyphus
     end
 
     def execution_strategy
-      @execution_strategy.new
+      @execution_strategy.new logger
     end
 
     def watch_for_shutdown
