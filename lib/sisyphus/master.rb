@@ -1,5 +1,6 @@
 require 'timeout'
-require_relative './forking_worker'
+require_relative './forking_execution_strategy'
+require_relative './worker'
 require_relative './null_logger'
 
 module Sisyphus
@@ -12,7 +13,8 @@ module Sisyphus
 
     def initialize(job, options = {})
       self.number_of_workers = options.fetch :workers, 0
-      @logger = options.fetch :logger, NullLogger.new
+      @logger = options.fetch(:logger) { NullLogger.new }
+      @execution_strategy = options.fetch(:execution_strategy) { ForkingExecutionStrategy }
       @workers = []
       @job = job
 
@@ -45,7 +47,7 @@ module Sisyphus
           worker.setup
           worker.start
         rescue Exception => e
-          writer.write ForkingWorker::UNCAUGHT_ERROR
+          writer.write Worker::UNCAUGHT_ERROR
           logger.warn(process_name) { e }
           exit! 0
         end
@@ -77,7 +79,11 @@ module Sisyphus
     attr_writer :number_of_workers
 
     def create_worker(writer)
-      ForkingWorker.new(job, writer, logger)
+      Worker.new(job, writer, execution_strategy)
+    end
+
+    def execution_strategy
+      @execution_strategy.new
     end
 
     def watch_for_shutdown
