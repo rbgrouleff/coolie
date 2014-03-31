@@ -4,15 +4,18 @@ module Sisyphus
   describe Master do
     subject(:master) { Master.new job }
 
-    before(:each) { master.stub :puts }
+    before(:each) {
+      allow(master).to receive(:puts)
+      allow(master).to receive(:sleep)
+    }
 
     let(:job) { double(:job) }
     let(:pipes) { [double(:reader_pipe), double(:writer_pipe)] }
 
-    describe 'when receiving the start_worker message' do
+    describe 'when receiving the spawn_worker message' do
       it 'forks' do
-        master.should_receive(:fork) { 666 }
-        master.start_worker
+        expect(master).to receive(:fork) { 666 }
+        master.spawn_worker
       end
 
       describe 'in the worker process' do
@@ -31,46 +34,48 @@ module Sisyphus
 
         it 'should setup the worker' do
           worker.should_receive :setup
-          master.start_worker
+          master.spawn_worker
         end
 
         it 'should rename the process' do
           master.should_receive(:process_name=).with("Worker #{666}")
-          master.start_worker
+          master.spawn_worker
         end
 
         it 'starts a worker after forking' do
           worker.should_receive :start
-          master.start_worker
+          master.spawn_worker
         end
 
         it 'gives the writer pipe to the worker' do
-          Worker.should_receive(:new).with(job, pipes.last, master.execution_strategy) { worker }
-          master.start_worker
+          execution_strategy = double :execution_strategy
+          allow(master).to receive(:execution_strategy) { execution_strategy }
+          Worker.should_receive(:new).with(job, pipes.last, execution_strategy) { worker }
+          master.spawn_worker
         end
 
         it 'closes the reader pipe' do
           pipes.first.should_receive :close
-          master.start_worker
+          master.spawn_worker
         end
 
         describe 'when an exception is raised' do
           let(:logger) { double(:logger) }
 
           it 'should log the exception' do
+            allow(worker).to receive(:error_handler) { ->{} }
             master.stub(:logger).and_return logger
-            pipes.last.stub(:write)
             worker.stub(:setup).and_raise :raised_by_spec
             logger.should_receive :warn
-            master.start_worker
+            master.spawn_worker
           end
 
           it 'should write to the writer pipe' do
             master.stub(:logger).and_return logger
             worker.stub(:setup).and_raise :raised_by_spec
             logger.stub :warn
-            pipes.last.should_receive(:write).with Worker::UNCAUGHT_ERROR
-            master.start_worker
+            expect(worker).to receive(:error_handler) { ->{} }
+            master.spawn_worker
           end
         end
       end
@@ -83,18 +88,18 @@ module Sisyphus
         end
 
         it 'increases worker_count' do
-          master.start_worker
+          master.spawn_worker
           master.worker_count.should eq(1)
         end
 
         it 'should open a pipe' do
           IO.should_receive(:pipe) { pipes }
-          master.start_worker
+          master.spawn_worker
         end
 
         it 'should close the writer pipe' do
           pipes.last.should_receive :close
-          master.start_worker
+          master.spawn_worker
         end
       end
     end
@@ -104,7 +109,7 @@ module Sisyphus
         pipes.each { |p| p.stub :close }
         IO.stub(:pipe) { pipes }
         master.stub(:fork) { 666 }
-        master.start_worker
+        master.spawn_worker
         Process.stub(:kill).with('INT', 666)
         Process.stub(:waitpid2).with(666)
       end
@@ -145,7 +150,7 @@ module Sisyphus
       master = Master.new nil, workers: 3
       master.stub :puts
       master.stub :watch_for_output
-      master.should_receive(:start_worker).exactly(3).times
+      master.should_receive(:spawn_worker).exactly(3).times
       master.start
     end
 
@@ -156,7 +161,7 @@ module Sisyphus
 
       it 'should not start workers' do
         master.stub :watch_for_output
-        master.should_not_receive :start_worker
+        master.should_not_receive :spawn_worker
         master.start
       end
     end
@@ -165,13 +170,13 @@ module Sisyphus
       Signal.should_receive(:trap).with(:INT)
       Signal.should_receive(:trap).with(:TTIN)
       Signal.should_receive(:trap).with(:TTOU)
-      master.stub :start_worker
+      master.stub :spawn_worker
       master.stub :watch_for_output
       master.start
     end
 
     it 'should watch for output' do
-      master.stub :start_worker
+      master.stub :spawn_worker
       master.should_receive :watch_for_output
       master.start
     end
@@ -181,7 +186,7 @@ module Sisyphus
       pipes.each { |p| p.stub(:close) }
       pipes.first.stub(:fileno) { 213 }
       master.stub(:fork) { 666 }
-      master.start_worker
+      master.spawn_worker
 
       master.send(:worker_pid, pipes.first).should eq(666)
     end

@@ -27,14 +27,14 @@ module Sisyphus
     def start
       trap_signals
       number_of_workers.times do
-        start_worker
+        spawn_worker
         sleep rand(1000).fdiv(1000)
       end
       puts "Sisyphus::Master started with PID: #{Process.pid}"
       watch_for_output
     end
 
-    def start_worker
+    def spawn_worker
       reader, writer = IO.pipe
       if wpid = fork
         writer.close
@@ -42,16 +42,18 @@ module Sisyphus
       else
         reader.close
         self.process_name = "Worker #{Process.pid}"
-        begin
-          worker = create_worker(writer)
-          worker.setup
-          worker.start
-        rescue Exception => e
-          writer.write Worker::UNCAUGHT_ERROR
-          logger.warn(process_name) { e }
-          exit! 0
-        end
+        worker = create_worker(writer)
+        start_worker worker
       end
+    end
+
+    def start_worker(worker)
+      worker.setup
+      worker.start
+    rescue Exception => e
+      worker.error_handler.call
+      logger.warn(process_name) { e }
+      exit! 0
     end
 
     def stop_worker(wpid)
@@ -124,12 +126,12 @@ module Sisyphus
 
     def process_output(pipes)
       pipes.each do |pipe|
-        restart_worker worker_pid(pipe) unless stopping?
+        respawn_worker worker_pid(pipe) unless stopping?
       end
     end
 
-    def restart_worker(wpid)
-      start_worker
+    def respawn_worker(wpid)
+      spawn_worker
       stop_worker wpid
       watch_for_shutdown
     end
@@ -189,7 +191,7 @@ module Sisyphus
 
     def handle_ttin
       self.number_of_workers += 1
-      start_worker
+      spawn_worker
     end
 
     def handle_ttou
