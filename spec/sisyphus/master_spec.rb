@@ -188,7 +188,7 @@ module Sisyphus
       allow(master).to receive(:fork) { 666 }
       master.spawn_worker
 
-      master.send(:worker_pid, pipes.first).should eq(666)
+      expect(master.send(:worker_pid, pipes.first)).to eq(666)
     end
 
     it 'raises if it can\'t resolve a wpid from a reader pipe' do
