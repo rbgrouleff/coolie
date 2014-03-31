@@ -32,6 +32,10 @@ Getting started
      master or workers encounter. The logger should quack like a
      `Logger` instance from the Ruby stdlib. Exceptions are logged with the
      `Logger::WARN` level.
+   * `:execution_strategy` which can either be `Sisyphus::SimpleExecutionStrategy` or
+     `Sisyphus::ForkingExecutionStrategy`. This is the strategy used by
+     workers when performing the job. The default is
+     `Sisyphus::ForkingExecutionStrategy`.
 4. You can start workers by doing one of the following things:
    * Send the `start` message to the master, if the `options` hash was
      provided. This starts a run loop which monitors workers and
@@ -63,8 +67,6 @@ Things missing
 Sisyphus is still very much in its infancy, though the ambition isn't to build a [Resque] [resque] clone, but
 instead build as small a tool with as few features as possible.
 
-[resque]: https://github.com/resque/resque
-
 There are, however, still features that are missing:
 
 - Force killing workers
@@ -76,6 +78,7 @@ There are, however, still features that are missing:
 - Some sort of reaping of worker processes
 - Documentation
 
+[resque]: https://github.com/resque/resque
 [unicorn]: http://unicorn.bogomips.org/
 
 Contributing
