@@ -1,6 +1,4 @@
 require 'timeout'
-require_relative './forking_execution_strategy'
-require_relative './worker'
 require_relative './null_logger'
 
 module Sisyphus
