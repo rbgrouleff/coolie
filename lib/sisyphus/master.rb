@@ -15,7 +15,9 @@ module Sisyphus
       self.number_of_workers = options.fetch :workers, 0
       @logger = options.fetch(:logger) { NullLogger.new }
       @execution_strategy = options.fetch(:execution_strategy) { ForkingExecutionStrategy }
-      @workers = []
+
+      @worker_pool = options.fetch(:worker_pool) { WorkerPool.new self }
+
       @job = job
 
       self_reader, self_writer = IO.pipe
@@ -27,24 +29,15 @@ module Sisyphus
     def start
       trap_signals
       number_of_workers.times do
-        spawn_worker
+        @worker_pool.spawn_worker
         sleep rand(1000).fdiv(1000)
       end
       puts "Sisyphus::Master started with PID: #{Process.pid}"
       watch_for_output
     end
 
-    def spawn_worker
-      reader, writer = IO.pipe
-      if wpid = fork
-        writer.close
-        workers << { pid: wpid, reader: reader }
-      else
-        reader.close
-        self.process_name = "Worker #{Process.pid}"
-        worker = create_worker(writer)
-        start_worker worker
-      end
+    def create_worker(writer)
+      Worker.new(job, writer, execution_strategy)
     end
 
     def start_worker(worker)
@@ -70,7 +63,7 @@ module Sisyphus
         Timeout.timeout(30) do
           watch_for_shutdown while worker_count > 0
         end
-      rescue e
+      rescue Timeout::Error => e
         p "Timeout reached:", e
       end
     end
@@ -79,13 +72,20 @@ module Sisyphus
       workers.length
     end
 
+    def process_name=(name)
+      $0 = name
+    end
+
+    def process_name
+      $0
+    end
+
     private
 
-    attr_reader :workers
     attr_writer :number_of_workers
 
-    def create_worker(writer)
-      Worker.new(job, writer, execution_strategy)
+    def workers
+      @worker_pool.workers
     end
 
     def execution_strategy
@@ -112,7 +112,7 @@ module Sisyphus
     end
 
     def process_signal_queue
-      handle_signal(Thread.main[:signal_queue].shift) until Thread.main[:signal_queue].empty?
+      handle_signal(signal_queue.shift) until signal_queue.empty?
     end
 
     def process_pipes(pipes)
@@ -131,7 +131,7 @@ module Sisyphus
     end
 
     def respawn_worker(wpid)
-      spawn_worker
+      @worker_pool.spawn_worker
       stop_worker wpid
       watch_for_shutdown
     end
@@ -161,7 +161,7 @@ module Sisyphus
     end
 
     def queue_signal(signal)
-      Thread.main[:signal_queue] << signal
+      signal_queue << signal
       @selfpipe[:writer].write_nonblock('.')
     rescue Errno::EAGAIN
       # Ignore
@@ -191,7 +191,7 @@ module Sisyphus
 
     def handle_ttin
       self.number_of_workers += 1
-      spawn_worker
+      @worker_pool.spawn_worker
     end
 
     def handle_ttou
@@ -209,12 +209,32 @@ module Sisyphus
       @stopping
     end
 
-    def process_name=(name)
-      $0 = name
+    def signal_queue
+      Thread.main[:signal_queue]
+    end
+  end
+
+  class WorkerPool
+
+    attr_reader :workers, :master
+
+    def initialize(master)
+      @master = master
+      @workers = []
     end
 
-    def process_name
-      $0
+    def spawn_worker
+      reader, writer = IO.pipe
+      if wpid = fork
+        writer.close
+        workers << { pid: wpid, reader: reader }
+      else
+        reader.close
+        master.process_name = "Worker #{Process.pid}"
+        worker = master.create_worker(writer)
+        master.start_worker worker
+      end
     end
+
   end
 end
