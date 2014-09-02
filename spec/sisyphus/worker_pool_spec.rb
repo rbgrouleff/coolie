@@ -1,5 +1,5 @@
 require 'spec_helper'
-require_relative '../../lib/sisyphus/master'
+require_relative '../../lib/sisyphus/worker_pool'
 
 module Sisyphus
   describe WorkerPool do

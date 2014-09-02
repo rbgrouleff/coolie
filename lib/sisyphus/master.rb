@@ -2,6 +2,7 @@ require 'timeout'
 require_relative './worker'
 require_relative './forking_execution_strategy'
 require_relative './null_logger'
+require_relative './worker_pool'
 
 module Sisyphus
   class Master
@@ -212,29 +213,5 @@ module Sisyphus
     def signal_queue
       Thread.main[:signal_queue]
     end
-  end
-
-  class WorkerPool
-
-    attr_reader :workers, :master
-
-    def initialize(master)
-      @master = master
-      @workers = []
-    end
-
-    def spawn_worker
-      reader, writer = IO.pipe
-      if wpid = fork
-        writer.close
-        workers << { pid: wpid, reader: reader }
-      else
-        reader.close
-        master.process_name = "Worker #{Process.pid}"
-        worker = master.create_worker(writer)
-        master.start_worker worker
-      end
-    end
-
   end
 end
