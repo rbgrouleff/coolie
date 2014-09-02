@@ -1,3 +1,4 @@
+require 'spec_helper'
 require_relative '../../lib/sisyphus/forking_execution_strategy'
 
 module Sisyphus
