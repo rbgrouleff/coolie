@@ -95,7 +95,7 @@ module Sisyphus
 
     def watch_for_shutdown
       wpid, _ = Process.wait2
-      worker = @workers.find { |w| w.fetch(:pid) == wpid }
+      worker = workers.find { |w| w.fetch(:pid) == wpid }
       worker.fetch(:reader).close
       workers.delete worker
       wpid
