@@ -16,9 +16,15 @@ module Sisyphus
       else
         reader.close
         master.process_name = "Worker #{Process.pid}"
-        worker = master.create_worker(writer)
+        worker = create_worker(writer)
         master.start_worker worker
       end
+    end
+
+    private
+
+    def create_worker(input_pipe)
+      master.create_worker(input_pipe)
     end
 
   end
