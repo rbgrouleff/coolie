@@ -15,8 +15,8 @@ module Sisyphus
         workers << { pid: wpid, reader: reader }
       else
         reader.close
-        master.process_name = "Worker #{Process.pid}"
         worker = create_worker(writer)
+        master.process_name = "Worker #{Process.pid}"
         master.start_worker worker
       end
     end
