@@ -2,11 +2,11 @@ module Sisyphus
   class Worker
     UNCAUGHT_ERROR = '.'
 
-    attr_reader :execution_strategy, :job, :output
+    attr_reader :execution_strategy, :job, :output, :to_master
 
-    def initialize(job, output, execution_strategy)
+    def initialize(job, execution_strategy)
       @job = job
-      @output = output
+      @to_master, @output = IO.pipe
       @execution_strategy = execution_strategy
     end
 
@@ -39,16 +39,24 @@ module Sisyphus
       }
     end
 
+    def stop
+      @stopped = true
+    end
+
+    def atfork_parent
+      output.close
+    end
+
+    def atfork_child
+      to_master.close
+    end
+
     private
 
     def trap_signals
       Signal.trap('INT') do
         stop
       end
-    end
-
-    def stop
-      @stopped = true
     end
 
     def stopped?

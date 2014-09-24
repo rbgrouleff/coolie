@@ -4,20 +4,20 @@ require_relative '../../lib/sisyphus/worker'
 module Sisyphus
   describe Worker do
     let(:job) { double :job }
-    let(:output) { double :pipe }
     let(:execution_strategy) { double :execution_strategy }
-    let(:worker) { Worker.new job, output, execution_strategy }
+
+    subject(:worker) { Worker.new job, execution_strategy }
 
     it 'traps signals when started' do
-      worker.stub :exit!
-      worker.instance_variable_set(:@stopped, true)
-      worker.should_receive :trap_signals
+      allow(worker).to receive(:exit!)
+      worker.stop
+      expect(worker).to receive(:trap_signals)
       worker.start
     end
 
     it 'exits when it has been stopped' do
-      worker.instance_variable_set(:@stopped, true)
-      worker.should_receive :exit!
+      worker.stop
+      expect(worker).to receive(:exit!)
       worker.start
     end
 
@@ -32,18 +32,30 @@ module Sisyphus
       worker.perform_job
     end
 
+    it 'only closes the output in atfork_parent' do
+      expect(worker.output).to receive(:close)
+      expect(worker.to_master).not_to receive(:close)
+      worker.atfork_parent
+    end
+
+    it 'only closes the to_master in atfork_child' do
+      expect(worker.to_master).to receive(:close)
+      expect(worker.output).not_to receive(:close)
+      worker.atfork_child
+    end
+
     context 'the error_handler' do
 
       it 'writes the UNCAUGHT_ERROR to output' do
-        expect(output).to receive(:write).with Worker::UNCAUGHT_ERROR
+        expect(worker.output).to receive(:write).with Worker::UNCAUGHT_ERROR
         worker.error_handler.call
       end
 
       it 'does not write UNCAUGHT_ERROR to output if the worker is stopped' do
         allow(worker).to receive(:stopped?) { true }
-        expect(output).to_not receive(:write)
+        expect(worker.output).to_not receive(:write)
         worker.error_handler.call
-        expect(output).to_not receive(:write)
+        expect(worker.output).to_not receive(:write)
         worker.error_handler.call
       end
 
