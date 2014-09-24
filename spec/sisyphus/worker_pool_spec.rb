@@ -30,16 +30,12 @@ module Sisyphus
 
         before :each do
           allow(worker_pool).to receive(:fork) { nil }
-          allow(IO).to receive(:pipe) { pipes }
-          allow(pipes.first).to receive(:close)
           allow(master).to receive(:process_name=)
           allow(master).to receive(:start_worker)
         end
 
         it 'closes the output pipe' do
           allow(master).to receive(:create_worker) { worker }
-          allow(worker).to receive(:to_master) { pipes.first }
-          allow(worker).to receive(:output)
           expect(worker).to receive(:atfork_child).with(no_args)
           worker_pool.spawn_worker
         end
