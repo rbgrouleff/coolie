@@ -37,8 +37,8 @@ module Sisyphus
       watch_for_output
     end
 
-    def create_worker(writer)
-      Worker.new(job, writer, execution_strategy)
+    def create_worker
+      Worker.new(job, execution_strategy)
     end
 
     def start_worker(worker)

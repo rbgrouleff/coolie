@@ -16,12 +16,10 @@ module Sisyphus
     let(:pipes) { [double(:reader_pipe), double(:writer_pipe)] }
 
     it 'creates a worker' do
-      output = double :output
       execution_strategy = double :execution_strategy
       master = Master.new job
       allow(master).to receive(:execution_strategy) { execution_strategy }
-      worker = master.create_worker(output)
-      expect(worker.output).to eq(output)
+      worker = master.create_worker
       expect(worker.job).to eq(job)
       expect(worker.execution_strategy).to eq(execution_strategy)
     end
