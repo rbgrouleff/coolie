@@ -1,3 +1,5 @@
+require_relative './worker'
+
 module Sisyphus
   class WorkerPool
 
@@ -9,13 +11,12 @@ module Sisyphus
     end
 
     def spawn_worker
-      reader, writer = IO.pipe
+      worker = create_worker
       if wpid = fork
-        writer.close
-        workers << { pid: wpid, reader: reader }
+        worker.atfork_parent
+        workers << { pid: wpid, reader: worker.to_master }
       else
-        reader.close
-        worker = create_worker(writer)
+        worker.atfork_child
         master.process_name = "Worker #{Process.pid}"
         master.start_worker worker
       end
@@ -23,8 +24,8 @@ module Sisyphus
 
     private
 
-    def create_worker(input_pipe)
-      master.create_worker(input_pipe)
+    def create_worker
+      master.create_worker
     end
 
   end

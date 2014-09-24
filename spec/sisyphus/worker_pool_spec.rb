@@ -1,15 +1,23 @@
 require 'spec_helper'
+require_relative '../../lib/sisyphus/master'
 require_relative '../../lib/sisyphus/worker_pool'
 
 module Sisyphus
   describe WorkerPool do
 
-    let(:worker_pool) { WorkerPool.new master }
+    subject(:worker_pool) { WorkerPool.new master }
 
     describe 'when receiving the spawn_worker message' do
 
-      let(:master) { double :master }
+      let(:job) { double :job }
+      let(:master) { Master.new(job) }
       let(:pipes) { [double(:output), double(:input)] }
+
+      it 'retrieves a worker from the master' do
+        allow(worker_pool).to receive(:fork) { 3267 }
+        expect(Worker).to receive(:new).and_call_original
+        worker_pool.spawn_worker
+      end
 
       it 'forks' do
         expect(worker_pool).to receive(:fork) { 666 }
@@ -25,12 +33,14 @@ module Sisyphus
           allow(IO).to receive(:pipe) { pipes }
           allow(pipes.first).to receive(:close)
           allow(master).to receive(:process_name=)
-          allow(master).to receive(:create_worker)
           allow(master).to receive(:start_worker)
         end
 
         it 'closes the output pipe' do
-          expect(pipes.first).to receive(:close)
+          allow(master).to receive(:create_worker) { worker }
+          allow(worker).to receive(:to_master) { pipes.first }
+          allow(worker).to receive(:output)
+          expect(worker).to receive(:atfork_child).with(no_args)
           worker_pool.spawn_worker
         end
 
@@ -39,14 +49,8 @@ module Sisyphus
           worker_pool.spawn_worker
         end
 
-        it 'retrieves a worker from the master' do
-          expect(master).to receive(:create_worker).with(pipes.last)
-          worker_pool.spawn_worker
-        end
-
         it 'tells master to start the worker' do
-          allow(master).to receive(:create_worker) { worker }
-          expect(master).to receive(:start_worker).with(worker)
+          expect(master).to receive(:start_worker)
           worker_pool.spawn_worker
         end
 
@@ -61,7 +65,10 @@ module Sisyphus
         end
 
         it 'closes the input pipe' do
-          expect(pipes.last).to receive(:close)
+          worker = double :worker
+          allow(worker).to receive(:to_master)
+          allow(master).to receive(:create_worker) { worker }
+          expect(worker).to receive(:atfork_parent).with(no_args)
           worker_pool.spawn_worker
         end
 
