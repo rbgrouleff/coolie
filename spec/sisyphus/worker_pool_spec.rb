@@ -15,7 +15,7 @@ module Sisyphus
 
       it 'retrieves a worker from the master' do
         allow(worker_pool).to receive(:fork) { 3267 }
-        expect(Worker).to receive(:new).and_call_original
+        expect(master).to receive(:create_worker).and_call_original
         worker_pool.spawn_worker
       end
 
