@@ -5,8 +5,9 @@ module Sisyphus
   describe Worker do
     let(:job) { double :job }
     let(:execution_strategy) { double :execution_strategy }
+    let(:logger) { double :logger }
 
-    subject(:worker) { Worker.new job, execution_strategy }
+    subject(:worker) { Worker.new job, execution_strategy, logger }
 
     it 'traps signals when started' do
       allow(worker).to receive(:exit!)
@@ -47,33 +48,65 @@ module Sisyphus
     context 'the error_handler' do
 
       it 'writes the UNCAUGHT_ERROR to output' do
+        allow(logger).to receive(:warn)
         expect(worker.output).to receive(:write).with Worker::UNCAUGHT_ERROR
-        worker.error_handler.call
+        worker.error_handler.call(:name, :error)
+      end
+
+      it 'logs the error being thrown' do
+        e = Exception.exception('THIS HAS BEEN RAISED')
+        expect(worker.logger).to receive(:warn) do |name, &block|
+          expect(name).to eq('process name')
+          expect(block.call).to eq(e)
+        end
+        worker.error_handler.call('process name', e)
       end
 
       it 'does not write UNCAUGHT_ERROR to output if the worker is stopped' do
         allow(worker).to receive(:stopped?) { true }
         expect(worker.output).to_not receive(:write)
-        worker.error_handler.call
+        worker.error_handler.call(:name, :error)
         expect(worker.output).to_not receive(:write)
-        worker.error_handler.call
+        worker.error_handler.call(:name, :error)
       end
 
     end
 
     context 'when job does not respond to :setup' do
       it 'does not call job.setup' do
-        job.stub(:respond_to?).with(:setup) { false }
-        job.should_not_receive :setup
+        allow(job).to receive(:respond_to?).with(:setup) { false }
+        expect(job).not_to receive(:setup)
         worker.setup
       end
     end
 
     context 'when job responds to :setup' do
+
+      before :each do
+        allow(job).to receive(:respond_to?).with(:setup) { true }
+      end
+
       it 'sets up the job' do
-        job.stub(:respond_to?).with(:setup) { true }
-        job.should_receive :setup
+        expect(job).to receive(:setup)
         worker.setup
+      end
+
+      context 'and job#setup raises an exception' do
+
+        before :each do
+          allow(job).to receive(:setup).and_raise(Exception)
+          allow(logger).to receive(:warn)
+        end
+
+        it 'handles the exception' do
+          expect { worker.setup }.not_to raise_error(Exception)
+        end
+
+        it 'calls the error_handler in the rescue block' do
+          expect(worker.output).to receive(:write).with(Worker::UNCAUGHT_ERROR)
+          worker.setup
+        end
+
       end
     end
 

@@ -2,16 +2,19 @@ module Sisyphus
   class Worker
     UNCAUGHT_ERROR = '.'
 
-    attr_reader :execution_strategy, :job, :output, :to_master
+    attr_reader :logger, :execution_strategy, :job, :output, :to_master
 
-    def initialize(job, execution_strategy)
+    def initialize(job, execution_strategy, logger)
       @job = job
       @to_master, @output = IO.pipe
       @execution_strategy = execution_strategy
+      @logger = logger
     end
 
     def setup
       job.setup if job.respond_to? :setup
+    rescue Exception => e
+      error_handler.call "Setup", e
     end
 
     def start
@@ -30,9 +33,11 @@ module Sisyphus
     end
 
     def error_handler
-      -> {
+      -> (name, error) {
+        return if stopped?
         begin
-          output.write UNCAUGHT_ERROR unless stopped?
+          logger.warn(name) { error }
+          output.write UNCAUGHT_ERROR
         rescue Errno::EAGAIN, Errno::EINTR
           # Ignore
         end
