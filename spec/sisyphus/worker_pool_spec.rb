@@ -34,7 +34,7 @@ module Sisyphus
           allow(master).to receive(:start_worker)
         end
 
-        it 'closes the output pipe' do
+        it 'runs Worker#atfork_child' do
           allow(master).to receive(:create_worker) { worker }
           expect(worker).to receive(:atfork_child).with(no_args)
           worker_pool.spawn_worker
