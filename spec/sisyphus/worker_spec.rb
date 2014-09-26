@@ -54,12 +54,13 @@ module Sisyphus
       end
 
       it 'logs the error being thrown' do
-        e = Exception.exception('THIS HAS BEEN RAISED')
+        the_name = :the_name
+        the_exception = :the_exception
         expect(worker.logger).to receive(:warn) do |name, &block|
-          expect(name).to eq('process name')
-          expect(block.call).to eq(e)
+          expect(name).to eq(the_name)
+          expect(block.call).to eq(the_exception)
         end
-        worker.error_handler.call('process name', e)
+        worker.error_handler.call(the_name, the_exception)
       end
 
       it 'does not write UNCAUGHT_ERROR to output if the worker is stopped' do
