@@ -38,7 +38,7 @@ module Sisyphus
     end
 
     def create_worker
-      Worker.new(job, execution_strategy)
+      Worker.new(job, execution_strategy, logger)
     end
 
     def start_worker(worker)
