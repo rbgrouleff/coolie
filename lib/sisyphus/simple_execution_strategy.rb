@@ -1,17 +1,10 @@
 module Sisyphus
   class SimpleExecutionStrategy
 
-    attr_reader :logger
-
-    def initialize(logger)
-      @logger = logger
-    end
-
-    def execute(job, error_handler = ->{})
+    def execute(job, error_handler = ->(name, error) {})
       job.perform
     rescue Exception => e
-      logger.warn(process_name) { e }
-      error_handler.call
+      error_handler.call process_name, e
     end
 
     private
