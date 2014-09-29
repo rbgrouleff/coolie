@@ -12,13 +12,14 @@ module Sisyphus
     end
 
     def setup
+      trap_signals
       job.setup if job.respond_to? :setup
     rescue Exception => e
       error_handler.call "Setup", e
     end
 
     def start
-      trap_signals
+      # TODO Don't start unless setup is complete
 
       loop do
         break if stopped?

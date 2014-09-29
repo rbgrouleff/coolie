@@ -9,11 +9,11 @@ module Sisyphus
 
     subject(:worker) { Worker.new job, execution_strategy, logger }
 
-    it 'traps signals when started' do
-      allow(worker).to receive(:exit!)
-      worker.stop
-      expect(worker).to receive(:trap_signals)
-      worker.start
+    it 'traps INT signals before setting up the job' do
+      allow(job).to receive(:respond_to?).with(:setup) { true }
+      expect(Signal).to receive(:trap).with('INT').ordered
+      expect(job).to receive(:setup).ordered
+      worker.setup
     end
 
     it 'exits when it has been stopped' do
