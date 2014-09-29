@@ -5,7 +5,7 @@ module Sisyphus
   describe ForkingExecutionStrategy do
 
     let(:job) { double :job }
-    let(:error_handler) { double :error_handler }
+    let(:error_handler) { ->(name, raised_error) {} }
     let(:strategy) { ForkingExecutionStrategy.new }
     let(:child_pid) { 1 }
     let(:status) { double :process_status }
@@ -64,8 +64,7 @@ module Sisyphus
 
       it 'does not call error_handler if execution is successful' do
         allow(strategy).to receive(:exit!).with(0)
-        expect(error_handler).not_to receive(:call)
-        strategy.execute job, error_handler
+        strategy.execute job, ->(n, e) { fail "Should not be called" }
       end
 
       context 'when the job#perform fails' do
@@ -79,15 +78,16 @@ module Sisyphus
         end
 
         it 'exits with a 1 status if job is performed and it fails' do
-          allow(error_handler).to receive(:call)
           expect(strategy).to receive(:exit!).with(1)
           strategy.execute job, error_handler
         end
 
         it 'calls error_handler if execution is unsuccessful' do
           allow(strategy).to receive(:exit!)
-          expect(error_handler).to receive(:call).with(process_name, exception)
-          strategy.execute job, error_handler
+          strategy.execute job, ->(name, raised_error) {
+            expect(name).to eq(process_name)
+            expect(raised_error).to eq(exception)
+          }
         end
 
       end
