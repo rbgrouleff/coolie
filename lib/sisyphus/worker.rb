@@ -9,22 +9,22 @@ module Sisyphus
       @to_master, @output = IO.pipe
       @execution_strategy = execution_strategy
       @logger = logger
+      @set_up = false
     end
 
     def setup
       trap_signals
       job.setup if job.respond_to? :setup
+      setup_done
     rescue Exception => e
       error_handler.call "Setup", e
     end
 
     def start
-      # TODO Don't start unless setup is complete
-
       loop do
         break if stopped?
         perform_job
-      end
+      end if set_up?
 
       exit! 0
     end
@@ -58,6 +58,14 @@ module Sisyphus
     end
 
     private
+
+    def set_up?
+      @set_up
+    end
+
+    def setup_done
+      @set_up = true
+    end
 
     def trap_signals
       Signal.trap('INT') do

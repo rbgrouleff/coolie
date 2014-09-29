@@ -16,9 +16,16 @@ module Sisyphus
       worker.setup
     end
 
-    it 'exits when it has been stopped' do
+    it 'does not perform the job when it has been stopped' do
       worker.stop
-      expect(worker).to receive(:exit!)
+      allow(worker).to receive(:exit!)
+      expect(worker).not_to receive(:perform_job)
+      worker.start
+    end
+
+    it 'will not start if it has not been set up' do
+      expect(worker).not_to receive(:perform_job)
+      allow(worker).to receive(:exit!)
       worker.start
     end
 
