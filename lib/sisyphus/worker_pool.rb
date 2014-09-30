@@ -18,7 +18,7 @@ module Sisyphus
       else
         worker.atfork_child
         master.process_name = "Worker #{Process.pid}"
-        master.start_worker worker
+        start_worker worker
       end
     end
 
@@ -26,6 +26,11 @@ module Sisyphus
 
     def create_worker
       master.create_worker
+    end
+
+    def start_worker(worker)
+      worker.setup
+      worker.start
     end
 
   end

@@ -31,7 +31,7 @@ module Sisyphus
         before :each do
           allow(worker_pool).to receive(:fork) { nil }
           allow(master).to receive(:process_name=)
-          allow(master).to receive(:start_worker)
+          allow(worker_pool).to receive(:start_worker)
         end
 
         it 'runs Worker#atfork_child' do
@@ -45,8 +45,12 @@ module Sisyphus
           worker_pool.spawn_worker
         end
 
-        it 'tells master to start the worker' do
-          expect(master).to receive(:start_worker)
+        it 'sets up and starts the worker' do
+          allow(master).to receive(:create_worker) { worker }
+          allow(worker_pool).to receive(:start_worker).and_call_original
+          allow(worker).to receive(:atfork_child)
+          expect(worker).to receive(:setup)
+          expect(worker).to receive(:start)
           worker_pool.spawn_worker
         end
 

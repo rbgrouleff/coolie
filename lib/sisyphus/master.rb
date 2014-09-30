@@ -41,11 +41,6 @@ module Sisyphus
       Worker.new(job, execution_strategy, logger)
     end
 
-    def start_worker(worker)
-      worker.setup
-      worker.start
-    end
-
     def stop_worker(wpid)
       if workers.find { |w| w.fetch(:pid) == wpid }
         Process.kill 'INT', wpid rescue Errno::ESRCH # Ignore if the process is already gone

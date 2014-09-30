@@ -24,13 +24,6 @@ module Sisyphus
       expect(worker.execution_strategy).to eq(execution_strategy)
     end
 
-    it 'starts a worker' do
-      worker = double :worker
-      expect(worker).to receive(:setup)
-      expect(worker).to receive(:start)
-      master.start_worker worker
-    end
-
     describe 'when it has running workers' do
 
       let(:workers) { double :workers }
