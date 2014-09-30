@@ -15,7 +15,6 @@ module Sisyphus
     def initialize(job, options = {})
       self.number_of_workers = options.fetch :workers, 0
       @logger = options.fetch(:logger) { NullLogger.new }
-      # TODO Why not just get an instance of the execution strategy here?
       @execution_strategy = options.fetch(:execution_strategy) { ForkingExecutionStrategy.new }
 
       @worker_pool = options.fetch(:worker_pool) { WorkerPool.new self }
@@ -45,11 +44,6 @@ module Sisyphus
     def start_worker(worker)
       worker.setup
       worker.start
-    rescue Exception => e
-      # TODO Remove this need for error handling..
-      worker.error_handler.call
-      logger.warn(process_name) { e }
-      exit! 0
     end
 
     def stop_worker(wpid)

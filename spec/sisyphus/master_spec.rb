@@ -31,38 +31,6 @@ module Sisyphus
       master.start_worker worker
     end
 
-    describe 'when starting a worker raises an error' do
-
-      let(:logger) { double(:logger) }
-      let(:worker) { double :worker }
-      let(:error_handler) { double :error_handler }
-
-      before :each do
-        allow(worker).to receive(:setup) { raise Exception, "expected error" }
-        allow(worker).to receive(:error_handler) { error_handler }
-        allow(master).to receive(:exit!)
-        allow(master).to receive(:logger) { logger }
-        allow(logger).to receive(:warn)
-      end
-
-      it 'should log the exception' do
-        allow(error_handler).to receive(:call)
-        expect(logger).to receive(:warn)
-        master.start_worker worker
-      end
-
-      it 'should call the worker\'s error handler' do
-        expect(error_handler).to receive(:call)
-        master.start_worker worker
-      end
-
-      it 'should call exit!' do
-        allow(error_handler).to receive(:call)
-        expect(master).to receive(:exit!).with(0)
-        master.start_worker worker
-      end
-    end
-
     describe 'when it has running workers' do
 
       let(:workers) { double :workers }
