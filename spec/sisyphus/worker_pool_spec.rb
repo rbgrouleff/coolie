@@ -30,7 +30,7 @@ module Sisyphus
 
         before :each do
           allow(worker_pool).to receive(:fork) { nil }
-          allow(worker_factory).to receive(:process_name=)
+          allow(worker_pool).to receive(:process_name=)
           allow(worker_pool).to receive(:start_worker)
         end
 
@@ -41,7 +41,7 @@ module Sisyphus
         end
 
         it 'renames the process' do
-          expect(worker_factory).to receive(:process_name=).with("Worker #{Process.pid}")
+          expect(worker_pool).to receive(:process_name=).with("Worker #{Process.pid}")
           worker_pool.spawn_worker
         end
 

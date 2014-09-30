@@ -64,14 +64,6 @@ module Sisyphus
       workers.length
     end
 
-    def process_name=(name)
-      $0 = name
-    end
-
-    def process_name
-      $0
-    end
-
     private
 
     attr_writer :number_of_workers
