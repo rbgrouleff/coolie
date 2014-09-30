@@ -3,10 +3,10 @@ require_relative './worker'
 module Sisyphus
   class WorkerPool
 
-    attr_reader :workers, :master
+    attr_reader :workers, :worker_factory
 
-    def initialize(master)
-      @master = master
+    def initialize(worker_factory)
+      @worker_factory = worker_factory
       @workers = []
     end
 
@@ -17,7 +17,7 @@ module Sisyphus
         workers << { pid: wpid, reader: worker.to_master }
       else
         worker.atfork_child
-        master.process_name = "Worker #{Process.pid}"
+        worker_factory.process_name = "Worker #{Process.pid}"
         start_worker worker
       end
     end
@@ -25,7 +25,7 @@ module Sisyphus
     private
 
     def create_worker
-      master.create_worker
+      worker_factory.create_worker
     end
 
     def start_worker(worker)
