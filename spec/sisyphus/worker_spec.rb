@@ -9,6 +9,12 @@ module Sisyphus
 
     subject(:worker) { Worker.new job, execution_strategy, logger }
 
+    it 'sets up itself and executes run when started' do
+      expect(worker).to receive(:setup).ordered
+      expect(worker).to receive(:run).ordered
+      worker.start
+    end
+
     it 'traps INT signals before setting up the job' do
       allow(job).to receive(:respond_to?).with(:setup) { true }
       expect(Signal).to receive(:trap).with('INT').ordered
@@ -20,13 +26,13 @@ module Sisyphus
       worker.stop
       allow(worker).to receive(:exit!)
       expect(worker).not_to receive(:perform_job)
-      worker.start
+      worker.run
     end
 
-    it 'will not start if it has not been set up' do
+    it 'will not run if it has not been set up' do
       expect(worker).not_to receive(:perform_job)
       allow(worker).to receive(:exit!)
-      worker.start
+      worker.run
     end
 
     it 'uses execution_strategy to perform the job' do

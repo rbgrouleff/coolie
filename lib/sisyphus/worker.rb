@@ -12,6 +12,11 @@ module Sisyphus
       @set_up = false
     end
 
+    def start
+      setup
+      run
+    end
+
     def setup
       trap_signals
       job.setup if job.respond_to? :setup
@@ -20,7 +25,7 @@ module Sisyphus
       error_handler.call "Setup", e
     end
 
-    def start
+    def run
       loop do
         break if stopped?
         perform_job
