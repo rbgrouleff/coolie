@@ -10,12 +10,13 @@ module Sisyphus
 
     HANDLED_SIGNALS = [:INT, :TTIN, :TTOU]
 
-    attr_reader :logger, :job, :number_of_workers
+    attr_reader :logger, :job, :number_of_workers, :execution_strategy
 
     def initialize(job, options = {})
       self.number_of_workers = options.fetch :workers, 0
       @logger = options.fetch(:logger) { NullLogger.new }
-      @execution_strategy = options.fetch(:execution_strategy) { ForkingExecutionStrategy }
+      # TODO Why not just get an instance of the execution strategy here?
+      @execution_strategy = options.fetch(:execution_strategy) { ForkingExecutionStrategy.new }
 
       @worker_pool = options.fetch(:worker_pool) { WorkerPool.new self }
 
@@ -45,6 +46,7 @@ module Sisyphus
       worker.setup
       worker.start
     rescue Exception => e
+      # TODO Remove this need for error handling..
       worker.error_handler.call
       logger.warn(process_name) { e }
       exit! 0
@@ -87,10 +89,6 @@ module Sisyphus
 
     def workers
       @worker_pool.workers
-    end
-
-    def execution_strategy
-      @execution_strategy.new logger
     end
 
     def watch_for_shutdown
